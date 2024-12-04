@@ -1,0 +1,39 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+suppressWarnings({
+    library(tidyr)
+    library(dplyr)
+    library(Seurat)
+#     library(viridis)
+#     library(ConsensusClusterePlus)
+    
+#     library(AUCell)
+    library(ggplot2)
+    library(future)
+    library(RColorBrewer)
+    
+    # library(SingleR)
+    
+#     library(TSCAN)
+#     library(slingshot)
+#     library(monocle3)
+})
+suppressMessages({
+    library(BayesSpace)
+    # library(infercnv)
+    # library(monocle3)
+    library(dplyr)
+    library(future)
+    library(UCell)
+    library(org.Hs.eg.db)
+    library(clusterProfiler)
+    library(enrichplot)
+    library(DOSE)
+    library(ggplot2)
+    library(AUCell)
+})
+```
