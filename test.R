@@ -6,3 +6,6 @@ plot(pca.res$x)
 
 library(matrix)
 x <- matrix(1,1,1)
+
+# Test message
+message("Hello world!")
