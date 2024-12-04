@@ -1,39 +1,93 @@
 ---
-title: "R Notebook"
+title: "Tertiary lymphoid structure in MCC"
 output: html_notebook
 ---
 
 ```{r}
 suppressWarnings({
-    library(tidyr)
-    library(dplyr)
-    library(Seurat)
-#     library(viridis)
-#     library(ConsensusClusterePlus)
-    
-#     library(AUCell)
-    library(ggplot2)
-    library(future)
-    library(RColorBrewer)
-    
-    # library(SingleR)
-    
-#     library(TSCAN)
-#     library(slingshot)
-#     library(monocle3)
+  library(Seurat)
+  library(ggplot2)
+  library(future)
+  library(RColorBrewer)
+  library(SingleCellExperiment)
+  library(BayesSpace)
+  library(dplyr)
 })
-suppressMessages({
-    library(BayesSpace)
-    # library(infercnv)
-    # library(monocle3)
-    library(dplyr)
-    library(future)
-    library(UCell)
-    library(org.Hs.eg.db)
-    library(clusterProfiler)
-    library(enrichplot)
-    library(DOSE)
-    library(ggplot2)
-    library(AUCell)
-})
+```
+
+```{r}
+options(future.globals.maxSize = 50*1024*1024^2)
+set.seed(100)
+`%!in%` <- Negate(`%in%`)
+source("utils/plot_func.R")
+```
+
+## TLS analysis with Me31 from Weng-Onn, using BayesSpace data
+
+Read data from disk
+
+```{r}
+me31.bayes <- readRDS("~/data/wengonn/bayesspace_Me31_outs.rds")
+# me31.ffpe.bayes <- readRDS("~/data/951572_MCC_Mel_Visium/bayesspace_Me31_MCC_outs.rds")
+me31.bayes
+```
+
+Flip coordinates (optional, depends on orientation in Seurat)
+
+```{r}
+me31.bayes$sce.enhanced$spot.col <- -me31.bayes$sce.enhanced$spot.col
+me31.bayes$sce$col <- -me31.bayes$sce$col
+```
+
+```{r}
+colors <- rbind(RColorBrewer::brewer.pal(8, name = "Set2"), RColorBrewer::brewer.pal(8, name = "Dark2"))
+colors <- c(colors) # Linearize
+colors <- c(colors, brewer.pal(12, name = "Set3"))
+names(colors) <- paste("C",seq(length(colors)),sep="")
+
+clusterPlot(me31.bayes$sce.enhanced) + scale_fill_manual(values = unname(colors))
+qPlot(me31.bayes$sce)
+logcounts(me31.bayes$sce.enhanced) %>% dim
+```
+
+Create Seurat object with logcounts from BayesSpace
+
+```{r}
+# so.for.umap <- CreateSeuratObject(counts = logcounts(me31.bayes$sce.enhanced))
+# so.for.umap[["RNA"]]$data <- so.for.umap[["RNA"]]$counts
+# so.for.umap$label <- me31.bayes$sce.enhanced$spatial.cluster
+# so.for.umap
+# 
+# so.for.umap <- FindVariableFeatures(so.for.umap)
+# so.for.umap <- ScaleData(so.for.umap)
+# so.for.umap <- RunPCA(so.for.umap)
+# so.for.umap <- RunUMAP(so.for.umap, dims=1:10, verbose=F)
+# so.for.umap <- RunTSNE(so.for.umap, dims=1:10, verbose=F)
+# 
+# saveRDS(so.for.umap, "~/data/wengonn/seurat_me31_bayesspace_logcounts.rds")
+so.for.umap <- readRDS("~/data/wengonn/seurat_me31_bayesspace_logcounts.rds")
+
+DimPlot(so.for.umap, group.by="label") + xlab("UMAP 1") + ylab("UMAP 2") + ggtitle("") + scale_color_manual(values = unname(colors))
+DimPlot(so.for.umap, group.by="label", reduction = "tsne") + xlab("TSNE 1") + ylab("TSNE 2") + ggtitle("") + scale_color_manual(values = unname(colors))
+```
+
+Assign Seurat clusters into tumor group or immune group
+
+```{r}
+so.for.umap$group <- plyr::mapvalues(so.for.umap$label, from=c(1,2,6,7,5,3,4), 
+                                     to=c(rep("Immune",3),rep("Tumor",4),rep(NA,0)))
+DimPlot(so.for.umap, group.by="group", cols=brewer.pal(8, "Set1")) + xlab("UMAP 1") + ylab("UMAP 2")
+
+me31.bayes$sce.enhanced$group <- so.for.umap$group
+clusterPlot(me31.bayes$sce.enhanced, label = "group") + scale_fill_manual(values = brewer.pal(8, "Set1"))
+```
+
+Assign
+
+```{r}
+
+```
+
+```{r}
+sessionInfo()
 ```
