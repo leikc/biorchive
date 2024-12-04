@@ -9,3 +9,6 @@ x <- matrix(1,1,1)
 
 # Test message
 message("Hello world!")
+
+# Add another message and folder
+message("Add folder")
