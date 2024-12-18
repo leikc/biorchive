@@ -11,7 +11,7 @@
 
 
 
-<title>TSCR-MCC</title>
+<title>R Notebook</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1746,388 +1746,76 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">TSCR-MCC</h1>
+<h1 class="title toc-ignore">R Notebook</h1>
 
 </div>
 
 
 <!-- rnb-text-begin -->
+<p>This is an <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+Notebook. When you execute code within the notebook, the results appear
+beneath the code.</p>
+<p>Try executing this chunk by clicking the <em>Run</em> button within
+the chunk or by placing your cursor inside it and pressing
+<em>Ctrl+Shift+Enter</em>.</p>
 <!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3VwcHJlc3NNZXNzYWdlcyh7XG4gIGxpYnJhcnkoU2V1cmF0KVxuICBsaWJyYXJ5KGdncGxvdDIpXG4gIGxpYnJhcnkoZnV0dXJlKVxuICBsaWJyYXJ5KFJDb2xvckJyZXdlcilcbiAgbGlicmFyeShTaW5nbGVDZWxsRXhwZXJpbWVudClcbiAgbGlicmFyeShCYXllc1NwYWNlKVxuICBsaWJyYXJ5KGRwbHlyKVxufSlcbmBgYCJ9 -->
-<pre class="r"><code>suppressMessages({
-  library(Seurat)
-  library(ggplot2)
-  library(future)
-  library(RColorBrewer)
-  library(SingleCellExperiment)
-  library(BayesSpace)
-  library(dplyr)
-})</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3B0aW9ucyhmdXR1cmUuZ2xvYmFscy5tYXhTaXplID0gNTAqMTAyNCoxMDI0XjIpXG5zZXQuc2VlZCgxMDApXG5gJSFpbiVgIDwtIE5lZ2F0ZShgJWluJWApXG5zb3VyY2UoXCJ1dGlscy9wbG90X2Z1bmMuUlwiKVxuXG5tcCA8LSByZWFkeGw6OnJlYWRfZXhjZWwoXCJ+L2RiLzQxNTg2XzIwMjNfNjEzMF9NT0VTTTZfRVNNLnhsc3hcIiwgc2hlZXQgPSAxKVxubXAgPC0gbGFwcGx5KG1wLCBjKVxubmFtZXMobXApIDwtIGdzdWIoXCJbIF0rXCIsXCIgXCIsbmFtZXMobXApKVxuYGBgIn0= -->
-<pre class="r"><code>options(future.globals.maxSize = 50*1024*1024^2)
-set.seed(100)
-`%!in%` &lt;- Negate(`%in%`)
-source(&quot;utils/plot_func.R&quot;)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5cilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGdncGxvdDIpXG5saWJyYXJ5KFJDb2xvckJyZXdlcilcblxubGlicmFyeShTZXVyYXQpXG5saWJyYXJ5KHNjUmVwZXJ0b2lyZSlcbiMgbGlicmFyeShCYXllc1NwYWNlKVxuIyBsaWJyYXJ5KFNwYVRhbGspXG4jIGxpYnJhcnkocG9jaGkpXG4jIGxpYnJhcnkoaW5mZXJjbnYpXG5cbiMgbGlicmFyeShvcmcuSHMuZWcuZGIpXG4jIGxpYnJhcnkoY2x1c3RlclByb2ZpbGVyKVxuIyBsaWJyYXJ5KGVucmljaHBsb3QpXG4jIGxpYnJhcnkoRE9TRSlcblxubGlicmFyeShmdXR1cmUpXG5saWJyYXJ5KEFVQ2VsbClcbmxpYnJhcnkoTWF0cml4KVxuXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
 
-mp &lt;- readxl::read_excel(&quot;~/db/41586_2023_6130_MOESM6_ESM.xlsx&quot;, sheet = 1)
-mp &lt;- lapply(mp, c)
-names(mp) &lt;- gsub(&quot;[ ]+&quot;,&quot; &quot;,names(mp))</code></pre>
+library(Seurat)
+library(scRepertoire)
+# library(BayesSpace)
+# library(SpaTalk)
+# library(pochi)
+# library(infercnv)
+
+# library(org.Hs.eg.db)
+# library(clusterProfiler)
+# library(enrichplot)
+# library(DOSE)
+
+library(future)
+library(AUCell)
+library(Matrix)
+</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-<div id="objective" class="section level1">
-<h1>Objective</h1>
-<p>Identify differences in tumor purity, tumor cell heterogeneity and
-tumor cell characteristics (metabolic characteristics, stemness, EMT,
-neuroblastic and epithelial differentiation), but also signs of cells
-stress or invasive /migratory potential in correlation to TME
-composition (focus on immune [T and B cells, monocytes, macrophages and
-DC], mesenchymal cells [fibroblasts, endothelial cells), but also
-epithelial cells.</p>
-<p>For each scRNAseq data, look for possible interactions and mutual
-modulations.</p>
-<p>Use spatial data to look for tumor subpopulations in special areas
-(e.g. hypoxic metabolism close to the epidermis, invasive
-characteristics close to the invasive front or blood/lymphatic vessels,
-cell stress close to immune cells).</p>
-<p>Look for signs of tumor evolution, modulated by TME. Combine scRNAseq
-pseudotime/velocyto with spatial data.</p>
-<p>Associate the results with clinical course.</p>
-<p>Read scRNA data from disk</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZmlsZXMgPC0gbGlzdC5maWxlcyhcIn4vZGF0YS9tY2Mvc2V1cmF0Lm91dHMvXCIsIGZ1bGwubmFtZXMgPSBUKVxubWNjLnNjIDwtIGxhcHBseShmaWxlcywgcmVhZFJEUylcbnVubGlzdChsYXBwbHkobWNjLnNjLCBmdW5jdGlvbihzbyl7dW5pcXVlKGFzLmNoYXJhY3RlcihzbyRvcmlnLmlkZW50KSl9KSlcbmBgYCJ9 -->
-<pre class="r"><code>files &lt;- list.files(&quot;~/data/mcc/seurat.outs/&quot;, full.names = T)
-mcc.sc &lt;- lapply(files, readRDS)
-unlist(lapply(mcc.sc, function(so){unique(as.character(so$orig.ident))}))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiIFsxXSBcIkQxOS0xMDFcIiAgICAgICAgICAgXCJERDIzLTEwMzVfR2V4XCIgICAgIFwiRTIxLTEtMzQyXCIgICAgICAgICBcIkUyMS0xLTM0M1wiICAgICAgICAgXCJFMjEtMS0zNDRcIiAgICAgICAgIFwiRTIzLTEtMzQ1XCIgICAgICAgICBcIkUyMy0xLTM2Ny1NQ0NcIiAgICBcbiBbOF0gXCJFMjMtMS0zODRcIiAgICAgICAgIFwiRTI0LTEtMzkzX0dleFwiICAgICBcIk1DQzAxXCIgICAgICAgICAgICAgXCJNQ0MwMlwiICAgICAgICAgICAgIFwiTUNDMDRcIiAgICAgICAgICAgICBcIk1DQzA1XCIgICAgICAgICAgICAgXCJNQ0MwN1wiICAgICAgICAgICAgXG5bMTVdIFwiTUNDMDhcIiAgICAgICAgICAgICBcIk1DQzA5XCIgICAgICAgICAgICAgXCJNQ0MxMFwiICAgICAgICAgICAgIFwiTUNDMTJcIiAgICAgICAgICAgICBcIk1DQzEzXCIgICAgICAgICAgICAgXCJNQ0MxNFwiICAgICAgICAgICAgIFwiTUNDMTVcIiAgICAgICAgICAgIFxuWzIyXSBcIk1DQzE2XCIgICAgICAgICAgICAgXCJNQ0MxOFwiICAgICAgICAgICAgIFwiVTIzLTEtMzc4LU1DQy1ORVdcIlxuIn0= -->
-<pre><code> [1] &quot;D19-101&quot;           &quot;DD23-1035_Gex&quot;     &quot;E21-1-342&quot;         &quot;E21-1-343&quot;         &quot;E21-1-344&quot;         &quot;E23-1-345&quot;         &quot;E23-1-367-MCC&quot;    
- [8] &quot;E23-1-384&quot;         &quot;E24-1-393_Gex&quot;     &quot;MCC01&quot;             &quot;MCC02&quot;             &quot;MCC04&quot;             &quot;MCC05&quot;             &quot;MCC07&quot;            
-[15] &quot;MCC08&quot;             &quot;MCC09&quot;             &quot;MCC10&quot;             &quot;MCC12&quot;             &quot;MCC13&quot;             &quot;MCC14&quot;             &quot;MCC15&quot;            
-[22] &quot;MCC16&quot;             &quot;MCC18&quot;             &quot;U23-1-378-MCC-NEW&quot;</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyAgWzFdIFwiRDE5LTEwMVwiICAgICAgICAgICBcIkREMjMtMTAzNV9HZXhcIiAgICAgXCJFMjEtMS0zNDJcIiAgICAgICAgIFwiRTIxLTEtMzQzXCIgICAgICAgICBcIkUyMS0xLTM0NFwiICAgICAgICAgXCJFMjMtMS0zNDVcIiAgICAgICAgIFwiRTIzLTEtMzY3LU1DQ1wiICAgIFxuIyAgWzhdIFwiRTIzLTEtMzg0XCIgICAgICAgICBcIkUyNC0xLTM5M19HZXhcIiAgICAgXCJNQ0MwMVwiICAgICAgICAgICAgIFwiTUNDMDJcIiAgICAgICAgICAgICBcIk1DQzA0XCIgICAgICAgICAgICAgXCJNQ0MwNVwiICAgICAgICAgICAgIFwiTUNDMDdcIiAgICAgICAgICAgIFxuIyBbMTVdIFwiTUNDMDhcIiAgICAgICAgICAgICBcIk1DQzA5XCIgICAgICAgICAgICAgXCJNQ0MxMFwiICAgICAgICAgICAgIFwiTUNDMTJcIiAgICAgICAgICAgICBcIk1DQzEzXCIgICAgICAgICAgICAgXCJNQ0MxNFwiICAgICAgICAgICAgIFwiTUNDMTVcIiAgICAgICAgICAgIFxuIyBbMjJdIFwiTUNDMTZcIiAgICAgICAgICAgICBcIk1DQzE4XCIgICAgICAgICAgICAgXCJVMjMtMS0zNzgtTUNDLU5FV1wiXG5tY2Muc2MgPC0gbWNjLnNjWy0yMl0gIyBSZW1vdmUgTUNDMTYgKFNDTEMpXG5gYGAifQ== -->
-<pre class="r"><code>#  [1] &quot;D19-101&quot;           &quot;DD23-1035_Gex&quot;     &quot;E21-1-342&quot;         &quot;E21-1-343&quot;         &quot;E21-1-344&quot;         &quot;E23-1-345&quot;         &quot;E23-1-367-MCC&quot;    
-#  [8] &quot;E23-1-384&quot;         &quot;E24-1-393_Gex&quot;     &quot;MCC01&quot;             &quot;MCC02&quot;             &quot;MCC04&quot;             &quot;MCC05&quot;             &quot;MCC07&quot;            
-# [15] &quot;MCC08&quot;             &quot;MCC09&quot;             &quot;MCC10&quot;             &quot;MCC12&quot;             &quot;MCC13&quot;             &quot;MCC14&quot;             &quot;MCC15&quot;            
-# [22] &quot;MCC16&quot;             &quot;MCC18&quot;             &quot;U23-1-378-MCC-NEW&quot;
-mcc.sc &lt;- mcc.sc[-22] # Remove MCC16 (SCLC)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>Patient/sample ID mapping</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5cbnRzY3JpZCA8LSBjKFwiTUNDMDFcIj1cIkJPMTktMS0xMDBcIixcbiAgICAgICAgICAgIFwiTUNDMDJcIj1cIkUxOS0xLTEwMFwiLFxuICAgICAgICAgICAgXCJNQ0MwM1wiPVwiRTE5LTEtMTAxXCIsXG4gICAgICAgICAgICBcIk1DQzA0XCI9XCJFMTktMS0xMDJcIixcbiAgICAgICAgICAgIFwiTUNDMDVcIj1cIkJPMTktMS0xMDFcIixcbiAgICAgICAgICAgIFwiTUNDMDZcIj1cIkUxOS0xLTEwM1wiLFxuICAgICAgICAgICAgXCJNQ0MwN1wiPVwiQk8xOS0xLTEwMlwiLFxuICAgICAgICAgICAgXCJNQ0MwOFwiPVwiQk8xOS0xLTEwM1wiLFxuICAgICAgICAgICAgXCJNQ0MwOVwiPVwiQk8xOS0xLTEwNFwiLFxuICAgICAgICAgICAgXCJNQ0MxMFwiPVwiQk8xOS0xLTEwNlwiLFxuICAgICAgICAgICAgXCJNQ0MxMVwiPVwiQk8xOS0xLTEwN1wiLFxuICAgICAgICAgICAgXCJNQ0MxMlwiPVwiRTE5LTEtMTA0XCIsXG4gICAgICAgICAgICBcIk1DQzEzXCI9XCJFMTktMS0xMDhcIixcbiAgICAgICAgICAgIFwiTUNDMTRcIj1cIkJPMTktMS0xMDhcIixcbiAgICAgICAgICAgIFwiTUNDMTVcIj1cIkJPMTktMS0xMDlcIixcbiAgICAgICAgICAgIFwiTUNDMTZcIj1cIkJPMTktMS0xMTBcIixcbiAgICAgICAgICAgIFwiTUNDMThcIj1cIkJPMTktMS0xMTFcIixcbiAgICAgICAgICAgIFwiSW4gcHJvZ3Jlc3NcIj1cIkJPMjAtMS0xMTJcIixcbiAgICAgICAgICAgIFwiRDE5LTEwMVwiPVwiRDE5LTEtMTAxXCIsXG4gICAgICAgICAgICBcIkREMjMtMTAzNV9HZXhcIj1cIkQyMy0xLTM1MVwiLFxuICAgICAgICAgICAgXCJJbiBwcm9ncmVzc1wiPVwiRFUyNC0xLTQwMFwiLFxuICAgICAgICAgICAgXCJJbiBwcm9ncmVzc1wiPVwiRTIxLTEtMTA2XCIsXG4gICAgICAgICAgICBcIkluIHByb2dyZXNzXCI9XCJFMjEtMS0xMDlcIixcbiAgICAgICAgICAgIFwiRTIxLTEtMzQyXCI9XCJFMjEtMS0zNDJcIixcbiAgICAgICAgICAgIFwiRTIxLTEtMzQzXCI9XCJFMjEtMS0zNDNcIixcbiAgICAgICAgICAgIFwiRTIxLTEtMzQ0XCI9XCJFMjEtMS0zNDRcIixcbiAgICAgICAgICAgIFwiRTIzLTEtMzQ1XCI9XCJFMjMtMS0zNDVcIixcbiAgICAgICAgICAgIFwiRTIzLTEtMzY3LU1DQ1wiPVwiRTIzLTEtMzY3XCIsXG4gICAgICAgICAgICBcIkUyMy0xLTM4NFwiPVwiRTIzLTEtMzg0XCIsXG4gICAgICAgICAgICBcIkUyNC0xLTM5M19HZXhcIj1cIkUyNC0xLTM5M1wiLFxuICAgICAgICAgICAgXCJJbiBwcm9ncmVzc1wiPVwiVTIzLTEtMzc4XCIsXG4gICAgICAgICAgICBcIlUyMy0xLTM3NV8zNzk4OVwiPVwiVTIzLTEtMzc1XCJcbiAgICAgICAgICAgIClcblxucGF0aWVudC5jb2RlIDwtIGMoXCJFMTktMS0xMDFcIj1cIjgxMTU2N1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDJcIj1cIjgxNDY0MlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDNcIj1cIjgxMTU2N1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDRcIj1cIjgxMTU2N1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDhcIj1cIjgxMTU2N1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMjQ1MDEvMTkgMVwiPVwiODExNTY3XCIsXG4gICAgICAgICAgICAgICAgICBcIkQyMTQzLzIwIDFKXCI9XCI4MTE1NjdcIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwMVwiPVwiLVwiLCAjIEVcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwMlwiPVwiLVwiLCAjIEVcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwM1wiPVwiMTkyODE0NDlcIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwNFwiPVwiMTkzMDcyODNcIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwNlwiPVwiLVwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzE5LTEtMTA4XCI9XCIxOTQ2NDM4OFwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzE5LTEtMTA5XCI9XCIxOTQ3NjgxNlwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzE5LTEtMTEwXCI9XCItXCIsXG4gICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMTFcIj1cIi1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8yMC0xLTExMlwiPVwiMjAzODkyMDFcIixcbiAgICAgICAgICAgICAgICAgIFwiQk8yMC0xLTExM1wiPVwiLVwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0zNDJcIj1cIjE5ODE3ODJcIixcbiAgICAgICAgICAgICAgICAgIFwiRTIxLTEtMzQzXCI9XCIxOTgxNzgyXCIsXG4gICAgICAgICAgICAgICAgICBcIkUyMS0xLTM0NFwiPVwiMTk4MTc4MlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0xMDZcIj1cIjg4NjUwM1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0xMDlcIj1cIjg4NjUwM1wiLFxuICAgICAgICAgICAgICAgICAgXCJFMjMtMS0zNDVcIj1cIjIwNTEwMjVcIixcbiAgICAgICAgICAgICAgICAgIFwiRTIzLTEtMzY3XCI9XCIyMDUxMDI1XCIsXG4gICAgICAgICAgICAgICAgICBcIkUyMy0xLTM4NFwiPVwiMjEzMTk0MVwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjQtMS0zOTNcIj1cIjE5ODE3ODJcIixcbiAgICAgICAgICAgICAgICAgIFwiRDIzLTEtMzUxXCI9XCIzNDRcIixcbiAgICAgICAgICAgICAgICAgIFwiVTIzLTEtMzc1XCI9XCItXCIsXG4gICAgICAgICAgICAgICAgICBcIlUyMy0xLTM3OFwiPVwiMzIzNjU0MDJcIixcbiAgICAgICAgICAgICAgICAgIFwiRFUyNC0xLTQwMFwiPVwiLVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDU3NVwiPVwiMjgzNTA3XCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjk0XCI9XCI3OTgzMTRcIixcbiAgICAgICAgICAgICAgICAgIFwiMjJUU0NSLTA2ODlcIj1cIjc3MjM4OVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDY5NVwiPVwiNzk4OTIwXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjE0XCI9XCJNQ0MgVFJJTVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDU3MlwiPVwiNTc3MTY5XCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNTM4XCI9XCI0NDQ0NTBcIlxuICAgICAgICAgICAgICAgICAgKVxuXG5kYXRlLmluY29taW5nIDwtIGMoXCJFMTktMS0xMDJcIj1cIjE3LjAxLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkUxOS0xLTEwMVwiPVwiMTcuMDEuMjAxOVwiLFxuICAgICAgICAgICAgICAgICAgIFwiRTE5LTEtMTAzXCI9XCIxMS4wMi4yMDE5XCIsXG4gICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDRcIj1cIjI1LjAzLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkUxOS0xLTEwNVwiPVwiMjUuMDMuMjAxOVwiLFxuICAgICAgICAgICAgICAgICAgIFwiRTE5LTEtMTA4XCI9XCIwMi4wNy4yMDE5XCIsXG4gICAgICAgICAgICAgICAgICAgXCJFMjEtMS0xMDZcIj1cIjI1LjAxLjIwMjFcIixcbiAgICAgICAgICAgICAgICAgICBcIkUyMS0xLTEwOVwiPVwiMTEuMDMuMjAyMVwiLFxuICAgICAgICAgICAgICAgICAgIFwiRTIxLTEtMzQyXCI9XCIxNC4xMi4yMDIxXCIsXG4gICAgICAgICAgICAgICAgICAgXCJFMjEtMS0zNDNcIj1cIjIyLjEyLjIwMjFcIixcbiAgICAgICAgICAgICAgICAgICBcIkUyMS0xLTM0NFwiPVwiMTcuMDEuMjAyMlwiLFxuICAgICAgICAgICAgICAgICAgIFwiRTIzLTEtMzQ1XCI9XCIxMy4wMS4yMDIzXCIsXG4gICAgICAgICAgICAgICAgICAgXCJFMjMtMS0zNjdcIj1cIjE3LjAzLjIwMjNcIixcbiAgICAgICAgICAgICAgICAgICBcIkUyMy0xLTM4NFwiPVwiMjEuMTEuMjAyM1wiLFxuICAgICAgICAgICAgICAgICAgIFwiRTI0LTEtMzkzXCI9XCIyNC4wNC4yMDI0XCIsXG4gICAgICAgICAgICAgICAgICAgXCJEMjMtMS0zNTFcIj1cIjA3LjAyLjIwMjNcIixcbiAgICAgICAgICAgICAgICAgICBcIkRVMjQtMS00MDBcIj1cIjIxLjA5LjIwMjNcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDFcIj1cIjE4LjAxLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDJcIj1cIjExLjAzLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDNcIj1cIjE1LjAzLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDRcIj1cIjI0LjA0LjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDZcIj1cIjE3LjA1LjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDhcIj1cIjE3LjA3LjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDlcIj1cIjA2LjA4LjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMTBcIj1cIjAyLjA5LjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMTFcIj1cIjI3LjExLjIwMTlcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMjAtMS0xMTJcIj1cIjA1LjAzLjIwMjBcIixcbiAgICAgICAgICAgICAgICAgICBcIkJPMjAtMS0xMTNcIj1cIjExLjEyLjIwMjBcIixcbiAgICAgICAgICAgICAgICAgICBcIlUyMy0xLTM3NVwiPVwiMTAuMDUuMjAyM1wiLFxuICAgICAgICAgICAgICAgICAgIFwiVTIzLTEtMzc4XCI9XCIyMS4wOS4yMDIzXCJcbiAgICAgICAgICAgICAgICAgICApXG5cbiMgUFQgb3IgTWV0L1ZQIG9yIFZOL1RoZXJhcHkvUmVzcG9uc2VcbnNhbXBsZS5zdGF0dXMgPC0gYyhcIkUxOS0xLTEwMVwiPVwiUFQvVlAvQlQvLVwiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDJcIj1cIk1ldC9WUC9OYWl2ZS8tXCIsXG4gICAgICAgICAgICAgICAgICBcIkUxOS0xLTEwM1wiPVwiTWV0L1ZQL0F2ZWx1bWFiIFNPVC9OUlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDRcIj1cIk1ldC9WUC9BdmVsdW1hYiA2dy9NUlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMTktMS0xMDhcIj1cIk1ldC9WUC9OaXZvbHVtYWIgU09UL1JcIixcbiAgICAgICAgICAgICAgICAgIFwiRTI0NTAxLzE5IDFcIj1cIk1ldC9WUC9OaXZvbHVtYWIgOHcvUlwiLFxuICAgICAgICAgICAgICAgICAgXCJEMjE0My8yMCAxSlwiPVwiTWV0L1ZQL05pdm9sdW1hYiAxMG0vUlwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzE5LTEtMTAxXCI9XCItL1ZQLy0vLVwiLCAjIEVcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwMlwiPVwiLS9WUC8tLy1cIiwgIyBFXG4gICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDNcIj1cIi0vVlAvQlQvUlwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzE5LTEtMTA0XCI9XCJQVC9WTi8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwNlwiPVwiLS9WUC8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwOFwiPVwiLS9WUC8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwOVwiPVwiLS9WUC8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTExMFwiPVwiLS9WTi8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTExMVwiPVwiLS9WUC8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8yMC0xLTExMlwiPVwiLS9WUC8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiQk8yMC0xLTExM1wiPVwiTWV0L1ZQLy0vLVwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0zNDJcIj1cIk1ldC9WUC9CVC9OUlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0zNDNcIj1cIk1ldC9WUC8xdy9OUlwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjEtMS0zNDRcIj1cIk1ldC9WUC81dy9SXCIsXG4gICAgICAgICAgICAgICAgICBcIkUyMS0xLTEwNlwiPVwiLS8tL0JULy1cIixcbiAgICAgICAgICAgICAgICAgIFwiRTIxLTEtMTA5XCI9XCItLy0vOHcvLVwiLFxuICAgICAgICAgICAgICAgICAgXCJFMjMtMS0zNDVcIj1cIk1ldC8tL0JULy1cIixcbiAgICAgICAgICAgICAgICAgIFwiRTIzLTEtMzY3XCI9XCJNZXQvLS84dy8tXCIsXG4gICAgICAgICAgICAgICAgICBcIkUyMy0xLTM4NFwiPVwiLS8tL0JUL1JcIixcbiAgICAgICAgICAgICAgICAgIFwiRTI0LTEtMzkzXCI9XCJNZXQvVlAvQXZlbHVtYWIgQlQvLVwiLFxuICAgICAgICAgICAgICAgICAgXCJEMjMtMS0zNTFcIj1cIkxOIE1ldC8tL05haXZlLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiVTIzLTEtMzc1XCI9XCJNZXQvLS8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiVTIzLTEtMzc4XCI9XCItLy0vQlQvTlJcIixcbiAgICAgICAgICAgICAgICAgIFwiRFUyNC0xLTQwMFwiPVwiLS8tL05haXZlLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiMjJUU0NSLTA1NzVcIj1cIlBUL1ZOLy0vLVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDY5NFwiPVwiUFQvVlAvLS8tXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjg5XCI9XCJVbmNsZWFyL1ZQLy0vLVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDY5NVwiPVwiUFQvVk4vLS8tXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjE0XCI9XCJQVC9WTi8tLy1cIixcbiAgICAgICAgICAgICAgICAgIFwiMjJUU0NSLTA1NzJcIj1cIlBUL1ZQLy0vLVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDUzOFwiPVwiUFQvVk4vLS8tXCJcbiAgICAgICAgICAgICAgICAgIClcblxuIyB0Y3IgPC0gYyhcIkJPMTktMS0xMDBcIj0xMTMsICMgVCBjZWxsIG51bWJlcnNcbiMgICAgICAgICAgXCJCTzE5LTEtMTAxXCI9LTEsXG4jICAgICAgICAgIFwiQk8xOS0xLTEwMlwiPTM3LFxuIyAgICAgICAgICBcIkJPMTktMS0xMDNcIj04OCxcbiMgICAgICAgICAgXCJCTzE5LTEtMTA0XCI9Mzg5LFxuIyAgICAgICAgICBcIkJPMTktMS0xMDZcIj0zNTAsXG4jICAgICAgICAgIFwiQk8xOS0xLTExMVwiPTM2NTQsXG4jICAgICAgICAgIFwiQk8xOS0xLTEwMFwiPTExMyxcbiMgICAgICAgICAgXCJFMjEtMS0zNDJcIj03NSxcbiMgICAgICAgICAgXCJFMjEtMS0zNDNcIj0zNSxcbiMgICAgICAgICAgXCJFMjEtMS0zNDRcIj0zNzIsXG4jICAgICAgICAgIFwiVTIzLTEtMzc4XCI9NDIsXG4jICAgICAgICAgIFwiRTIzLTEtMzg0XCI9NDksXG4jICAgICAgICAgIFwiRTI0LTEtMzkzXCI9MTA5OSxcbiMgICAgICAgICAgXCJFMTktMS0xMDJcIj0tMSxcbiMgICAgICAgICAgXCJFMTktMS0xMDRcIj0tMSxcbiMgICAgICAgICAgXCJFMTktMS0xMDhcIj0tMVxuIyAgICAgICAgICApXG5cbnRjciA8LSBjKFwiQk8xOS0xLTEwMFwiPTExMywgIyBUIGNlbGwgbnVtYmVyc1xuICAgICAgICAgXCJCTzE5LTEtMTAxXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8xOS0xLTEwMlwiPTM3LFxuICAgICAgICAgXCJCTzE5LTEtMTAzXCI9ODgsXG4gICAgICAgICBcIkJPMTktMS0xMDRcIj0zODksXG4gICAgICAgICBcIkJPMTktMS0xMDZcIj0zNTAsXG4gICAgICAgICBcIkJPMTktMS0xMDlcIj1cIlNlcXVlbmNlZFwiLFxuICAgICAgICAgXCJCTzE5LTEtMTEwXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8xOS0xLTExMVwiPTM2NTQsXG4gICAgICAgICBcIkJPMjAtMS0xMTJcIj00NixcbiAgICAgICAgIFwiQk8yMC0xLTExM1wiPTc1NCxcbiAgICAgICAgIFwiRTIxLTEtMzQyXCI9NzksXG4gICAgICAgICBcIkUyMS0xLTM0M1wiPTQ2LFxuICAgICAgICAgXCJFMjEtMS0zNDRcIj0zODIsXG4gICAgICAgICBcIlUyMy0xLTM3NVwiPTAsXG4gICAgICAgICBcIlUyMy0xLTM3OFwiPVwiU2VxdWVuY2VkXCIsXG4gICAgICAgICBcIkUxOS0xLTEwMVwiPTAsXG4gICAgICAgICBcIkUxOS0xLTEwMlwiPTM4OSxcbiAgICAgICAgIFwiRTE5LTEtMTAzXCI9MTAsXG4gICAgICAgICBcIkUxOS0xLTEwNFwiPTI1LFxuICAgICAgICAgXCJFMTktMS0xMDhcIj0yMDIsXG4gICAgICAgICBcIkUyMS0xLTEwNlwiPTYzMyxcbiAgICAgICAgIFwiRTIxLTEtMTA5XCI9MTExOCxcbiAgICAgICAgIFwiRTIzLTEtMzQ1XCI9MTY2LFxuICAgICAgICAgXCJFMjMtMS0zNjdcIj03OCxcbiAgICAgICAgIFwiRTIzLTEtMzg0XCI9NDksXG4gICAgICAgICBcIkUyNC0xLTM5M1wiPTEwOTksXG4gICAgICAgICBcIkQyMy0xLTM1MVwiPTBcbiAgICAgICAgIFxuICAgICAgICAgKVxuXG4jIGJjciA8LSBjKFwiQk8xOS0xLTEwM1wiPTQ1LCAjIEIgY2VsbCBudW1iZXJzXG4jICAgICAgICAgIFwiQk8xOS0xLTEwNlwiPTcwLFxuIyAgICAgICAgICBcIkJPMTktMS0xMDhcIj0yMCxcbiMgICAgICAgICAgXCJVMjMtMS0zNzhcIj0zOCxcbiMgICAgICAgICAgXCJFMjMtMS0zODRcIj00OSxcbiMgICAgICAgICAgXCJFMjQtMS0zOTNcIj0xMzY5MVxuIyAgICAgICAgICApXG5cbmJjciA8LSBjKFwiRTE5LTEtMTAxXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTE5LTEtMTAyXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTE5LTEtMTAzXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTE5LTEtMTA0XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTE5LTEtMTA4XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIxLTEtMTA2XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIxLTEtMTA5XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIxLTEtMzQyXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIxLTEtMzQzXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIxLTEtMzQ0XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIzLTEtMzQ1XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIzLTEtMzY3XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiRTIzLTEtMzg0XCI9NDksXG4gICAgICAgICBcIkUyNC0xLTM5M1wiPTEzNjkxLFxuICAgICAgICAgXCJEMjMtMS0zNTFcIj1cIlNlcXVlbmNlZFwiLFxuICAgICAgICAgXCJCTzE5LTEtMTAxXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8xOS0xLTEwMlwiPVwiU2VxdWVuY2VkXCIsXG4gICAgICAgICBcIkJPMTktMS0xMDNcIj1cIlNlcXVlbmNlZFwiLFxuICAgICAgICAgXCJCTzE5LTEtMTA2XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8xOS0xLTEwOFwiPTIwLFxuICAgICAgICAgXCJCTzE5LTEtMTA5XCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8xOS0xLTExMFwiPVwiU2VxdWVuY2VkXCIsXG4gICAgICAgICBcIkJPMTktMS0xMTFcIj1cIlNlcXVlbmNlZFwiLFxuICAgICAgICAgXCJCTzIwLTEtMTEyXCI9XCJTZXF1ZW5jZWRcIixcbiAgICAgICAgIFwiQk8yMC0xLTExM1wiPVwiU2VxdWVuY2VkXCIsXG4gICAgICAgICBcIlUyMy0xLTM3NVwiPVwiU2VxdWVuY2VkXCIsXG4gICAgICAgICBcIlUyMy0xLTM3OFwiPVwiU2VxdWVuY2VkXCJcbiAgICAgICAgIClcblxuXG5maXhlZCA8LSBjKFwiRTE5LTEtMTA0XCI9XCJUMDE5LTAwMjFcIixcbiAgICAgICAgICAgXCJFMTktMS0xMDNcIj1cIlQxOS0wMDEyXCIsXG4gICAgICAgICAgIFwiRTE5LTEtMTA4XCI9XCJEMzM5NC0xOS0xQlwiLFxuICAgICAgICAgICBcIkQyMTQzLzIwIDFKXCI9XCJEMjE0My0yQjFKXCIsXG4gICAgICAgICAgIFwiRTI0NTAxLzE5IDFcIj1cIkUyNDUwMS0xOS0xXCIpXG5cbnNwYXRpYWwuY3J5byA8LSBjKFwiRTE5LTEtMTA4XCI9XCJQMjUyNTdfMTAxXCIsXG4gICAgICAgICAgICAgICAgICBcIkJPMTktMS0xMDlcIj1cIlAyNTI1N18yMDFcIixcbiAgICAgICAgICAgICAgICAgIFwiQk8xOS0xLTEwMVwiPVwiUDI1MjU3XzMwMVwiLFxuICAgICAgICAgICAgICAgICAgXCJCTzIwLTEtMTEyXCI9XCJQMjUyNTdfNDAxXCIpXG5cbnNwYXRpYWwuZmZwZSA8LSBjKFwiRTE5LTEtMTAxXCI9XCJEMzA1LTE5XCIsXG4gICAgICAgICAgICAgICAgICBcIkUxOS0xLTEwM1wiPVwiVDE5LTAwMTJcIixcbiAgICAgICAgICAgICAgICAgIFwiRTE5LTEtMTA4XCI9XCJEMzM5MC0xOVwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDU3NVwiPVwiNzYzMl9hMVwiLFxuICAgICAgICAgICAgICAgICAgXCJNZTMxXCI9XCJNZTMxXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjk0XCI9XCI2MDM1Ml8yMi0yYlwiLFxuICAgICAgICAgICAgICAgICAgXCIyMlRTQ1ItMDY4OVwiPVwiMzA1NDBfMjJcIixcbiAgICAgICAgICAgICAgICAgIFwiMjJUU0NSLTA2OTVcIj1cIjIyOTdfMjNfbGllXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNjE0XCI9XCIyMS00NDg4M0RcIixcbiAgICAgICAgICAgICAgICAgIFwiMjJUU0NSLTA1NzJcIj1cIkUyMDIxLTI0NjYyLTFjXCIsXG4gICAgICAgICAgICAgICAgICBcIjIyVFNDUi0wNTM4XCI9XCIxNDg5SUktMjFcIilcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5vcHRpb25zKGZ1dHVyZS5nbG9iYWxzLm1heFNpemUgPSA1MCoxMDI0KjEwMjReMilcbnNldC5zZWVkKDEwMClcbiMgc2V0d2QoXCJ+L2RhdGEvVmlzaXVtX01lbDUvXCIpXG5gJSFpbiVgIDwtIE5lZ2F0ZShgJWluJWApXG5cbmNvbG9ycyA8LSByYmluZChicmV3ZXIucGFsKDgsIG5hbWUgPSBcIlNldDJcIiksIGJyZXdlci5wYWwoOCwgbmFtZSA9IFwiRGFyazJcIikpXG5jb2xvcnMgPC0gYyhjb2xvcnMpICMgTGluZWFyaXplXG5jb2xvcnMgPC0gYyhjb2xvcnMsIGJyZXdlci5wYWwoMTIsIG5hbWUgPSBcIlNldDNcIikpXG4jIG5hbWVzKGNvbG9ycykgPC0gcGFzdGUoXCJDXCIsc2VxKGxlbmd0aChjb2xvcnMpKSxzZXA9XCJcIilcblxuYGBgIn0= -->
 <pre class="r"><code>
+options(future.globals.maxSize = 50*1024*1024^2)
+set.seed(100)
+# setwd(&quot;~/data/Visium_Mel5/&quot;)
+`%!in%` &lt;- Negate(`%in%`)
 
-tscrid &lt;- c(&quot;MCC01&quot;=&quot;BO19-1-100&quot;,
-            &quot;MCC02&quot;=&quot;E19-1-100&quot;,
-            &quot;MCC03&quot;=&quot;E19-1-101&quot;,
-            &quot;MCC04&quot;=&quot;E19-1-102&quot;,
-            &quot;MCC05&quot;=&quot;BO19-1-101&quot;,
-            &quot;MCC06&quot;=&quot;E19-1-103&quot;,
-            &quot;MCC07&quot;=&quot;BO19-1-102&quot;,
-            &quot;MCC08&quot;=&quot;BO19-1-103&quot;,
-            &quot;MCC09&quot;=&quot;BO19-1-104&quot;,
-            &quot;MCC10&quot;=&quot;BO19-1-106&quot;,
-            &quot;MCC11&quot;=&quot;BO19-1-107&quot;,
-            &quot;MCC12&quot;=&quot;E19-1-104&quot;,
-            &quot;MCC13&quot;=&quot;E19-1-108&quot;,
-            &quot;MCC14&quot;=&quot;BO19-1-108&quot;,
-            &quot;MCC15&quot;=&quot;BO19-1-109&quot;,
-            &quot;MCC16&quot;=&quot;BO19-1-110&quot;,
-            &quot;MCC18&quot;=&quot;BO19-1-111&quot;,
-            &quot;In progress&quot;=&quot;BO20-1-112&quot;,
-            &quot;D19-101&quot;=&quot;D19-1-101&quot;,
-            &quot;DD23-1035_Gex&quot;=&quot;D23-1-351&quot;,
-            &quot;In progress&quot;=&quot;DU24-1-400&quot;,
-            &quot;In progress&quot;=&quot;E21-1-106&quot;,
-            &quot;In progress&quot;=&quot;E21-1-109&quot;,
-            &quot;E21-1-342&quot;=&quot;E21-1-342&quot;,
-            &quot;E21-1-343&quot;=&quot;E21-1-343&quot;,
-            &quot;E21-1-344&quot;=&quot;E21-1-344&quot;,
-            &quot;E23-1-345&quot;=&quot;E23-1-345&quot;,
-            &quot;E23-1-367-MCC&quot;=&quot;E23-1-367&quot;,
-            &quot;E23-1-384&quot;=&quot;E23-1-384&quot;,
-            &quot;E24-1-393_Gex&quot;=&quot;E24-1-393&quot;,
-            &quot;In progress&quot;=&quot;U23-1-378&quot;,
-            &quot;U23-1-375_37989&quot;=&quot;U23-1-375&quot;
-            )
-
-patient.code &lt;- c(&quot;E19-1-101&quot;=&quot;811567&quot;,
-                  &quot;E19-1-102&quot;=&quot;814642&quot;,
-                  &quot;E19-1-103&quot;=&quot;811567&quot;,
-                  &quot;E19-1-104&quot;=&quot;811567&quot;,
-                  &quot;E19-1-108&quot;=&quot;811567&quot;,
-                  &quot;E24501/19 1&quot;=&quot;811567&quot;,
-                  &quot;D2143/20 1J&quot;=&quot;811567&quot;,
-                  &quot;BO19-1-101&quot;=&quot;-&quot;, # E
-                  &quot;BO19-1-102&quot;=&quot;-&quot;, # E
-                  &quot;BO19-1-103&quot;=&quot;19281449&quot;,
-                  &quot;BO19-1-104&quot;=&quot;19307283&quot;,
-                  &quot;BO19-1-106&quot;=&quot;-&quot;,
-                  &quot;BO19-1-108&quot;=&quot;19464388&quot;,
-                  &quot;BO19-1-109&quot;=&quot;19476816&quot;,
-                  &quot;BO19-1-110&quot;=&quot;-&quot;,
-                  &quot;BO19-1-111&quot;=&quot;-&quot;,
-                  &quot;BO20-1-112&quot;=&quot;20389201&quot;,
-                  &quot;BO20-1-113&quot;=&quot;-&quot;,
-                  &quot;E21-1-342&quot;=&quot;1981782&quot;,
-                  &quot;E21-1-343&quot;=&quot;1981782&quot;,
-                  &quot;E21-1-344&quot;=&quot;1981782&quot;,
-                  &quot;E21-1-106&quot;=&quot;886503&quot;,
-                  &quot;E21-1-109&quot;=&quot;886503&quot;,
-                  &quot;E23-1-345&quot;=&quot;2051025&quot;,
-                  &quot;E23-1-367&quot;=&quot;2051025&quot;,
-                  &quot;E23-1-384&quot;=&quot;2131941&quot;,
-                  &quot;E24-1-393&quot;=&quot;1981782&quot;,
-                  &quot;D23-1-351&quot;=&quot;344&quot;,
-                  &quot;U23-1-375&quot;=&quot;-&quot;,
-                  &quot;U23-1-378&quot;=&quot;32365402&quot;,
-                  &quot;DU24-1-400&quot;=&quot;-&quot;,
-                  &quot;22TSCR-0575&quot;=&quot;283507&quot;,
-                  &quot;22TSCR-0694&quot;=&quot;798314&quot;,
-                  &quot;22TSCR-0689&quot;=&quot;772389&quot;,
-                  &quot;22TSCR-0695&quot;=&quot;798920&quot;,
-                  &quot;22TSCR-0614&quot;=&quot;MCC TRIM&quot;,
-                  &quot;22TSCR-0572&quot;=&quot;577169&quot;,
-                  &quot;22TSCR-0538&quot;=&quot;444450&quot;
-                  )
-
-date.incoming &lt;- c(&quot;E19-1-102&quot;=&quot;17.01.2019&quot;,
-                   &quot;E19-1-101&quot;=&quot;17.01.2019&quot;,
-                   &quot;E19-1-103&quot;=&quot;11.02.2019&quot;,
-                   &quot;E19-1-104&quot;=&quot;25.03.2019&quot;,
-                   &quot;E19-1-105&quot;=&quot;25.03.2019&quot;,
-                   &quot;E19-1-108&quot;=&quot;02.07.2019&quot;,
-                   &quot;E21-1-106&quot;=&quot;25.01.2021&quot;,
-                   &quot;E21-1-109&quot;=&quot;11.03.2021&quot;,
-                   &quot;E21-1-342&quot;=&quot;14.12.2021&quot;,
-                   &quot;E21-1-343&quot;=&quot;22.12.2021&quot;,
-                   &quot;E21-1-344&quot;=&quot;17.01.2022&quot;,
-                   &quot;E23-1-345&quot;=&quot;13.01.2023&quot;,
-                   &quot;E23-1-367&quot;=&quot;17.03.2023&quot;,
-                   &quot;E23-1-384&quot;=&quot;21.11.2023&quot;,
-                   &quot;E24-1-393&quot;=&quot;24.04.2024&quot;,
-                   &quot;D23-1-351&quot;=&quot;07.02.2023&quot;,
-                   &quot;DU24-1-400&quot;=&quot;21.09.2023&quot;,
-                   &quot;BO19-1-101&quot;=&quot;18.01.2019&quot;,
-                   &quot;BO19-1-102&quot;=&quot;11.03.2019&quot;,
-                   &quot;BO19-1-103&quot;=&quot;15.03.2019&quot;,
-                   &quot;BO19-1-104&quot;=&quot;24.04.2019&quot;,
-                   &quot;BO19-1-106&quot;=&quot;17.05.2019&quot;,
-                   &quot;BO19-1-108&quot;=&quot;17.07.2019&quot;,
-                   &quot;BO19-1-109&quot;=&quot;06.08.2019&quot;,
-                   &quot;BO19-1-110&quot;=&quot;02.09.2019&quot;,
-                   &quot;BO19-1-111&quot;=&quot;27.11.2019&quot;,
-                   &quot;BO20-1-112&quot;=&quot;05.03.2020&quot;,
-                   &quot;BO20-1-113&quot;=&quot;11.12.2020&quot;,
-                   &quot;U23-1-375&quot;=&quot;10.05.2023&quot;,
-                   &quot;U23-1-378&quot;=&quot;21.09.2023&quot;
-                   )
-
-# PT or Met/VP or VN/Therapy/Response
-sample.status &lt;- c(&quot;E19-1-101&quot;=&quot;PT/VP/BT/-&quot;,
-                  &quot;E19-1-102&quot;=&quot;Met/VP/Naive/-&quot;,
-                  &quot;E19-1-103&quot;=&quot;Met/VP/Avelumab SOT/NR&quot;,
-                  &quot;E19-1-104&quot;=&quot;Met/VP/Avelumab 6w/MR&quot;,
-                  &quot;E19-1-108&quot;=&quot;Met/VP/Nivolumab SOT/R&quot;,
-                  &quot;E24501/19 1&quot;=&quot;Met/VP/Nivolumab 8w/R&quot;,
-                  &quot;D2143/20 1J&quot;=&quot;Met/VP/Nivolumab 10m/R&quot;,
-                  &quot;BO19-1-101&quot;=&quot;-/VP/-/-&quot;, # E
-                  &quot;BO19-1-102&quot;=&quot;-/VP/-/-&quot;, # E
-                  &quot;BO19-1-103&quot;=&quot;-/VP/BT/R&quot;,
-                  &quot;BO19-1-104&quot;=&quot;PT/VN/-/-&quot;,
-                  &quot;BO19-1-106&quot;=&quot;-/VP/-/-&quot;,
-                  &quot;BO19-1-108&quot;=&quot;-/VP/-/-&quot;,
-                  &quot;BO19-1-109&quot;=&quot;-/VP/-/-&quot;,
-                  &quot;BO19-1-110&quot;=&quot;-/VN/-/-&quot;,
-                  &quot;BO19-1-111&quot;=&quot;-/VP/-/-&quot;,
-                  &quot;BO20-1-112&quot;=&quot;-/VP/-/-&quot;,
-                  &quot;BO20-1-113&quot;=&quot;Met/VP/-/-&quot;,
-                  &quot;E21-1-342&quot;=&quot;Met/VP/BT/NR&quot;,
-                  &quot;E21-1-343&quot;=&quot;Met/VP/1w/NR&quot;,
-                  &quot;E21-1-344&quot;=&quot;Met/VP/5w/R&quot;,
-                  &quot;E21-1-106&quot;=&quot;-/-/BT/-&quot;,
-                  &quot;E21-1-109&quot;=&quot;-/-/8w/-&quot;,
-                  &quot;E23-1-345&quot;=&quot;Met/-/BT/-&quot;,
-                  &quot;E23-1-367&quot;=&quot;Met/-/8w/-&quot;,
-                  &quot;E23-1-384&quot;=&quot;-/-/BT/R&quot;,
-                  &quot;E24-1-393&quot;=&quot;Met/VP/Avelumab BT/-&quot;,
-                  &quot;D23-1-351&quot;=&quot;LN Met/-/Naive/-&quot;,
-                  &quot;U23-1-375&quot;=&quot;Met/-/-/-&quot;,
-                  &quot;U23-1-378&quot;=&quot;-/-/BT/NR&quot;,
-                  &quot;DU24-1-400&quot;=&quot;-/-/Naive/-&quot;,
-                  &quot;22TSCR-0575&quot;=&quot;PT/VN/-/-&quot;,
-                  &quot;22TSCR-0694&quot;=&quot;PT/VP/-/-&quot;,
-                  &quot;22TSCR-0689&quot;=&quot;Unclear/VP/-/-&quot;,
-                  &quot;22TSCR-0695&quot;=&quot;PT/VN/-/-&quot;,
-                  &quot;22TSCR-0614&quot;=&quot;PT/VN/-/-&quot;,
-                  &quot;22TSCR-0572&quot;=&quot;PT/VP/-/-&quot;,
-                  &quot;22TSCR-0538&quot;=&quot;PT/VN/-/-&quot;
-                  )
-
-# tcr &lt;- c(&quot;BO19-1-100&quot;=113, # T cell numbers
-#          &quot;BO19-1-101&quot;=-1,
-#          &quot;BO19-1-102&quot;=37,
-#          &quot;BO19-1-103&quot;=88,
-#          &quot;BO19-1-104&quot;=389,
-#          &quot;BO19-1-106&quot;=350,
-#          &quot;BO19-1-111&quot;=3654,
-#          &quot;BO19-1-100&quot;=113,
-#          &quot;E21-1-342&quot;=75,
-#          &quot;E21-1-343&quot;=35,
-#          &quot;E21-1-344&quot;=372,
-#          &quot;U23-1-378&quot;=42,
-#          &quot;E23-1-384&quot;=49,
-#          &quot;E24-1-393&quot;=1099,
-#          &quot;E19-1-102&quot;=-1,
-#          &quot;E19-1-104&quot;=-1,
-#          &quot;E19-1-108&quot;=-1
-#          )
-
-tcr &lt;- c(&quot;BO19-1-100&quot;=113, # T cell numbers
-         &quot;BO19-1-101&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-102&quot;=37,
-         &quot;BO19-1-103&quot;=88,
-         &quot;BO19-1-104&quot;=389,
-         &quot;BO19-1-106&quot;=350,
-         &quot;BO19-1-109&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-110&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-111&quot;=3654,
-         &quot;BO20-1-112&quot;=46,
-         &quot;BO20-1-113&quot;=754,
-         &quot;E21-1-342&quot;=79,
-         &quot;E21-1-343&quot;=46,
-         &quot;E21-1-344&quot;=382,
-         &quot;U23-1-375&quot;=0,
-         &quot;U23-1-378&quot;=&quot;Sequenced&quot;,
-         &quot;E19-1-101&quot;=0,
-         &quot;E19-1-102&quot;=389,
-         &quot;E19-1-103&quot;=10,
-         &quot;E19-1-104&quot;=25,
-         &quot;E19-1-108&quot;=202,
-         &quot;E21-1-106&quot;=633,
-         &quot;E21-1-109&quot;=1118,
-         &quot;E23-1-345&quot;=166,
-         &quot;E23-1-367&quot;=78,
-         &quot;E23-1-384&quot;=49,
-         &quot;E24-1-393&quot;=1099,
-         &quot;D23-1-351&quot;=0
-         
-         )
-
-# bcr &lt;- c(&quot;BO19-1-103&quot;=45, # B cell numbers
-#          &quot;BO19-1-106&quot;=70,
-#          &quot;BO19-1-108&quot;=20,
-#          &quot;U23-1-378&quot;=38,
-#          &quot;E23-1-384&quot;=49,
-#          &quot;E24-1-393&quot;=13691
-#          )
-
-bcr &lt;- c(&quot;E19-1-101&quot;=&quot;Sequenced&quot;,
-         &quot;E19-1-102&quot;=&quot;Sequenced&quot;,
-         &quot;E19-1-103&quot;=&quot;Sequenced&quot;,
-         &quot;E19-1-104&quot;=&quot;Sequenced&quot;,
-         &quot;E19-1-108&quot;=&quot;Sequenced&quot;,
-         &quot;E21-1-106&quot;=&quot;Sequenced&quot;,
-         &quot;E21-1-109&quot;=&quot;Sequenced&quot;,
-         &quot;E21-1-342&quot;=&quot;Sequenced&quot;,
-         &quot;E21-1-343&quot;=&quot;Sequenced&quot;,
-         &quot;E21-1-344&quot;=&quot;Sequenced&quot;,
-         &quot;E23-1-345&quot;=&quot;Sequenced&quot;,
-         &quot;E23-1-367&quot;=&quot;Sequenced&quot;,
-         &quot;E23-1-384&quot;=49,
-         &quot;E24-1-393&quot;=13691,
-         &quot;D23-1-351&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-101&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-102&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-103&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-106&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-108&quot;=20,
-         &quot;BO19-1-109&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-110&quot;=&quot;Sequenced&quot;,
-         &quot;BO19-1-111&quot;=&quot;Sequenced&quot;,
-         &quot;BO20-1-112&quot;=&quot;Sequenced&quot;,
-         &quot;BO20-1-113&quot;=&quot;Sequenced&quot;,
-         &quot;U23-1-375&quot;=&quot;Sequenced&quot;,
-         &quot;U23-1-378&quot;=&quot;Sequenced&quot;
-         )
-
-
-fixed &lt;- c(&quot;E19-1-104&quot;=&quot;T019-0021&quot;,
-           &quot;E19-1-103&quot;=&quot;T19-0012&quot;,
-           &quot;E19-1-108&quot;=&quot;D3394-19-1B&quot;,
-           &quot;D2143/20 1J&quot;=&quot;D2143-2B1J&quot;,
-           &quot;E24501/19 1&quot;=&quot;E24501-19-1&quot;)
-
-spatial.cryo &lt;- c(&quot;E19-1-108&quot;=&quot;P25257_101&quot;,
-                  &quot;BO19-1-109&quot;=&quot;P25257_201&quot;,
-                  &quot;BO19-1-101&quot;=&quot;P25257_301&quot;,
-                  &quot;BO20-1-112&quot;=&quot;P25257_401&quot;)
-
-spatial.ffpe &lt;- c(&quot;E19-1-101&quot;=&quot;D305-19&quot;,
-                  &quot;E19-1-103&quot;=&quot;T19-0012&quot;,
-                  &quot;E19-1-108&quot;=&quot;D3390-19&quot;,
-                  &quot;22TSCR-0575&quot;=&quot;7632_a1&quot;,
-                  &quot;Me31&quot;=&quot;Me31&quot;,
-                  &quot;22TSCR-0694&quot;=&quot;60352_22-2b&quot;,
-                  &quot;22TSCR-0689&quot;=&quot;30540_22&quot;,
-                  &quot;22TSCR-0695&quot;=&quot;2297_23_lie&quot;,
-                  &quot;22TSCR-0614&quot;=&quot;21-44883D&quot;,
-                  &quot;22TSCR-0572&quot;=&quot;E2021-24662-1c&quot;,
-                  &quot;22TSCR-0538&quot;=&quot;1489II-21&quot;)</code></pre>
+colors &lt;- rbind(brewer.pal(8, name = &quot;Set2&quot;), brewer.pal(8, name = &quot;Dark2&quot;))
+colors &lt;- c(colors) # Linearize
+colors &lt;- c(colors, brewer.pal(12, name = &quot;Set3&quot;))
+# names(colors) &lt;- paste(&quot;C&quot;,seq(length(colors)),sep=&quot;&quot;)
+</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBzYW1wbGVzLm1ldGEgPC0gZGF0YS5mcmFtZShcInNhbXBsZWlkXCI9dW5saXN0KGxhcHBseShtY2Muc2MsIGZ1bmN0aW9uKHNvKXt1bmlxdWUoYXMuY2hhcmFjdGVyKHNvJG9yaWcuaWRlbnQpKX0pKSwgXCJzY1JOQVwiPVRSVUUsIHJvdy5uYW1lcyA9IHVubGlzdChsYXBwbHkobWNjLnNjLCBmdW5jdGlvbihzbyl7dW5pcXVlKGFzLmNoYXJhY3RlcihzbyRvcmlnLmlkZW50KSl9KSkpXG5zYW1wbGVzLm1ldGEgPC0gYXNfdGliYmxlKGFzLmRhdGEuZnJhbWUocGF0aWVudC5jb2RlKSwgcm93bmFtZXMgPSBcInNhbXBsZS5oaXN0b1wiKVxuc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKGRhdGUuaW5jb21lPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMoZGF0ZS5pbmNvbWluZyksIHRvPWRhdGUuaW5jb21pbmcpKSAlPiUgbXV0YXRlKGRhdGUuaW5jb21lPWNhc2Vfd2hlbihkYXRlLmluY29tZT09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiBkYXRlLmluY29tZSkpXG5zYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUoY2xpbmljYWwgPSBwbHlyOjptYXB2YWx1ZXMoc2FtcGxlLmhpc3RvLCBmcm9tPW5hbWVzKHNhbXBsZS5zdGF0dXMpLCB0bz1zYW1wbGUuc3RhdHVzKSlcbnNhbXBsZXMubWV0YS5jbGluaWNhbCA8LSBhc190aWJibGUodChhcy5kYXRhLmZyYW1lKHN0cnNwbGl0KHNhbXBsZXMubWV0YSRjbGluaWNhbCxcIi9cIikpKSlcbmNvbG5hbWVzKHNhbXBsZXMubWV0YS5jbGluaWNhbCkgPC0gYyhcImxvY1wiLFwidmlydXNcIixcInRyZWF0bWVudFwiLFwicmVzcG9uc2VcIilcbnNhbXBsZXMubWV0YSA8LSBjYmluZChzYW1wbGVzLm1ldGEsIHNhbXBsZXMubWV0YS5jbGluaWNhbClcbnNhbXBsZXMubWV0YSRjbGluaWNhbCA8LSBOVUxMXG5cblxucm93bmFtZXMoc2FtcGxlcy5tZXRhKSA8LSBwbHlyOjptYXB2YWx1ZXMocm93bmFtZXMoc2FtcGxlcy5tZXRhKSwgZnJvbT1uYW1lcyh0c2NyaWQpLCB0bz10c2NyaWQpXG5yb3duYW1lcyhzYW1wbGVzLm1ldGEpIDwtIGdzdWIoXCJfR2V4XCIsXCJcIixyb3duYW1lcyhzYW1wbGVzLm1ldGEpKVxucm93bmFtZXMoc2FtcGxlcy5tZXRhKSA8LSBnc3ViKFwiLU1DQ1tBLVpcXFxcLV0qXCIsXCJcIixyb3duYW1lcyhzYW1wbGVzLm1ldGEpKVxuIyBzYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUocGF0aWVudD1wbHlyOjptYXB2YWx1ZXMoc2FtcGxlcy5tZXRhJHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyhwYXRpZW50LmNvZGUpLCB0bz1wYXRpZW50LmNvZGUpKSAlPiUgbXV0YXRlKHBhdGllbnQ9Y2FzZV93aGVuKHBhdGllbnQ9PXJvd25hbWVzKHNhbXBsZXMubWV0YSkgfiBOQSwgVFJVRSB+IHBhdGllbnQpKVxuc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKHNjcm5hPXNhbXBsZS5oaXN0bykgJT4lIG11dGF0ZShzY3JuYT1jYXNlX3doZW4oc2NybmEgJWluJSB0c2NyaWQgfiBzY3JuYSwgVFJVRX5OQSkpICU+JSBtdXRhdGUoc2NybmE9cGx5cjo6bWFwdmFsdWVzKHNjcm5hLCBmcm9tPXRzY3JpZCwgdG89bmFtZXModHNjcmlkKSkpXG5zYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUodGNyPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXModGNyKSwgdG89dGNyKSwgYmNyPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMoYmNyKSwgdG89YmNyKSkgJT4lIG11dGF0ZSh0Y3I9Y2FzZV93aGVuKHRjcj09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiB0Y3IpLCBiY3I9Y2FzZV93aGVuKGJjcj09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiBiY3IpKVxuc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKHNuUk5BPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMoZml4ZWQpLCB0bz1maXhlZCkpICU+JSBtdXRhdGUoc25STkE9Y2FzZV93aGVuKHNuUk5BPT1zYW1wbGUuaGlzdG8gfiBOQSwgVFJVRSB+IHNuUk5BKSlcblxuc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKHNwYXRpYWwuY3J5bz1wbHlyOjptYXB2YWx1ZXMoc2FtcGxlLmhpc3RvLCBmcm9tPW5hbWVzKHNwYXRpYWwuY3J5byksIHRvPXNwYXRpYWwuY3J5bykpICU+JSBtdXRhdGUoc3BhdGlhbC5jcnlvPWNhc2Vfd2hlbihzcGF0aWFsLmNyeW89PXNhbXBsZS5oaXN0byB+IE5BLCBUUlVFIH4gc3BhdGlhbC5jcnlvKSlcbnNhbXBsZXMubWV0YSA8LSBzYW1wbGVzLm1ldGEgJT4lIG11dGF0ZShzcGF0aWFsLmZmcGU9cGx5cjo6bWFwdmFsdWVzKHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyhzcGF0aWFsLmZmcGUpLCB0bz1zcGF0aWFsLmZmcGUpKSAlPiUgbXV0YXRlKHNwYXRpYWwuZmZwZT1jYXNlX3doZW4oc3BhdGlhbC5mZnBlPT1zYW1wbGUuaGlzdG8gfiBOQSwgVFJVRSB+IHNwYXRpYWwuZmZwZSkpXG5gYGAifQ== -->
-<pre class="r"><code># samples.meta &lt;- data.frame(&quot;sampleid&quot;=unlist(lapply(mcc.sc, function(so){unique(as.character(so$orig.ident))})), &quot;scRNA&quot;=TRUE, row.names = unlist(lapply(mcc.sc, function(so){unique(as.character(so$orig.ident))})))
-samples.meta &lt;- as_tibble(as.data.frame(patient.code), rownames = &quot;sample.histo&quot;)
-samples.meta &lt;- samples.meta %&gt;% mutate(date.income=plyr::mapvalues(sample.histo, from=names(date.incoming), to=date.incoming)) %&gt;% mutate(date.income=case_when(date.income==sample.histo ~ NA, TRUE ~ date.income))
-samples.meta &lt;- samples.meta %&gt;% mutate(clinical = plyr::mapvalues(sample.histo, from=names(sample.status), to=sample.status))
-samples.meta.clinical &lt;- as_tibble(t(as.data.frame(strsplit(samples.meta$clinical,&quot;/&quot;))))
-colnames(samples.meta.clinical) &lt;- c(&quot;loc&quot;,&quot;virus&quot;,&quot;treatment&quot;,&quot;response&quot;)
-samples.meta &lt;- cbind(samples.meta, samples.meta.clinical)
-samples.meta$clinical &lt;- NULL
-
-
-rownames(samples.meta) &lt;- plyr::mapvalues(rownames(samples.meta), from=names(tscrid), to=tscrid)
-rownames(samples.meta) &lt;- gsub(&quot;_Gex&quot;,&quot;&quot;,rownames(samples.meta))
-rownames(samples.meta) &lt;- gsub(&quot;-MCC[A-Z\\-]*&quot;,&quot;&quot;,rownames(samples.meta))
-# samples.meta &lt;- samples.meta %&gt;% mutate(patient=plyr::mapvalues(samples.meta$sample.histo, from=names(patient.code), to=patient.code)) %&gt;% mutate(patient=case_when(patient==rownames(samples.meta) ~ NA, TRUE ~ patient))
-samples.meta &lt;- samples.meta %&gt;% mutate(scrna=sample.histo) %&gt;% mutate(scrna=case_when(scrna %in% tscrid ~ scrna, TRUE~NA)) %&gt;% mutate(scrna=plyr::mapvalues(scrna, from=tscrid, to=names(tscrid)))
-samples.meta &lt;- samples.meta %&gt;% mutate(tcr=plyr::mapvalues(sample.histo, from=names(tcr), to=tcr), bcr=plyr::mapvalues(sample.histo, from=names(bcr), to=bcr)) %&gt;% mutate(tcr=case_when(tcr==sample.histo ~ NA, TRUE ~ tcr), bcr=case_when(bcr==sample.histo ~ NA, TRUE ~ bcr))
-samples.meta &lt;- samples.meta %&gt;% mutate(snRNA=plyr::mapvalues(sample.histo, from=names(fixed), to=fixed)) %&gt;% mutate(snRNA=case_when(snRNA==sample.histo ~ NA, TRUE ~ snRNA))
-
-samples.meta &lt;- samples.meta %&gt;% mutate(spatial.cryo=plyr::mapvalues(sample.histo, from=names(spatial.cryo), to=spatial.cryo)) %&gt;% mutate(spatial.cryo=case_when(spatial.cryo==sample.histo ~ NA, TRUE ~ spatial.cryo))
-samples.meta &lt;- samples.meta %&gt;% mutate(spatial.ffpe=plyr::mapvalues(sample.histo, from=names(spatial.ffpe), to=spatial.ffpe)) %&gt;% mutate(spatial.ffpe=case_when(spatial.ffpe==sample.histo ~ NA, TRUE ~ spatial.ffpe))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudXZlYWwuZml4ZWQuMSA8LSByZWFkUkRTKFwifi9kYXRhL0ZpeGVkX1JOQV9VdmVhbF9HSVNUL0ZpeGVkX3V2ZWFsXzIwMjQwNzA0L291dHMvcGVyX3NhbXBsZV9vdXRzL1wiKVxudXZlYWwuZml4ZWQuMiA8LSByZWFkUkRTKFwifi9kYXRhL0ZpeGVkX1JOQV9VdmVhbF9HSVNUL0ZpeGVkX3V2ZWFsXzIwMjQwNzA0L291dHMvcGVyX3NhbXBsZV9vdXRzL1wiKVxuXG5gYGAifQ== -->
+<pre class="r"><code>uveal.fixed.1 &lt;- readRDS(&quot;~/data/Fixed_RNA_Uveal_GIST/Fixed_uveal_20240704/outs/per_sample_outs/&quot;)
+uveal.fixed.2 &lt;- readRDS(&quot;~/data/Fixed_RNA_Uveal_GIST/Fixed_uveal_20240704/outs/per_sample_outs/&quot;)
+</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2FtcGxlcy5tZXRhICU+JSBhcnJhbmdlKHBhdGllbnQuY29kZSlcbndyaXRlLmNzdihzYW1wbGVzLm1ldGEgJT4lIGFycmFuZ2UocGF0aWVudC5jb2RlKSwgXCJ+L2RhdGEvbWNjL2Nhc2VyZXBvcnRfODExNTQ3L3RzY3JfcGF0aWVudF9zYW1wbGUuY3N2XCIpXG5gYGAifQ== -->
-<pre class="r"><code>samples.meta %&gt;% arrange(patient.code)
-write.csv(samples.meta %&gt;% arrange(patient.code), &quot;~/data/mcc/casereport_811547/tscr_patient_sample.csv&quot;)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-chunk-end -->
-</div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiVFNDUi1NQ0MiCm91dHB1dDogaHRtbF9ub3RlYm9vawotLS0KCmBgYHtyfQpzdXBwcmVzc01lc3NhZ2VzKHsKICBsaWJyYXJ5KFNldXJhdCkKICBsaWJyYXJ5KGdncGxvdDIpCiAgbGlicmFyeShmdXR1cmUpCiAgbGlicmFyeShSQ29sb3JCcmV3ZXIpCiAgbGlicmFyeShTaW5nbGVDZWxsRXhwZXJpbWVudCkKICBsaWJyYXJ5KEJheWVzU3BhY2UpCiAgbGlicmFyeShkcGx5cikKfSkKYGBgCgpgYGB7cn0Kb3B0aW9ucyhmdXR1cmUuZ2xvYmFscy5tYXhTaXplID0gNTAqMTAyNCoxMDI0XjIpCnNldC5zZWVkKDEwMCkKYCUhaW4lYCA8LSBOZWdhdGUoYCVpbiVgKQpzb3VyY2UoInV0aWxzL3Bsb3RfZnVuYy5SIikKCm1wIDwtIHJlYWR4bDo6cmVhZF9leGNlbCgifi9kYi80MTU4Nl8yMDIzXzYxMzBfTU9FU002X0VTTS54bHN4Iiwgc2hlZXQgPSAxKQptcCA8LSBsYXBwbHkobXAsIGMpCm5hbWVzKG1wKSA8LSBnc3ViKCJbIF0rIiwiICIsbmFtZXMobXApKQpgYGAKCiMgT2JqZWN0aXZlCgpJZGVudGlmeSBkaWZmZXJlbmNlcyBpbiB0dW1vciBwdXJpdHksIHR1bW9yIGNlbGwgaGV0ZXJvZ2VuZWl0eSBhbmQgdHVtb3IgY2VsbCBjaGFyYWN0ZXJpc3RpY3MgKG1ldGFib2xpYyBjaGFyYWN0ZXJpc3RpY3MsIHN0ZW1uZXNzLCBFTVQsIG5ldXJvYmxhc3RpYyBhbmQgZXBpdGhlbGlhbCBkaWZmZXJlbnRpYXRpb24pLCBidXQgYWxzbyBzaWducyBvZiBjZWxscyBzdHJlc3Mgb3IgaW52YXNpdmUgL21pZ3JhdG9yeSBwb3RlbnRpYWwgaW4gY29ycmVsYXRpb24gdG8gVE1FIGNvbXBvc2l0aW9uIChmb2N1cyBvbiBpbW11bmUgW1QgYW5kIEIgY2VsbHMsIG1vbm9jeXRlcywgbWFjcm9waGFnZXMgYW5kIERDXSwgbWVzZW5jaHltYWwgY2VsbHMgW2ZpYnJvYmxhc3RzLCBlbmRvdGhlbGlhbCBjZWxscyksIGJ1dCBhbHNvIGVwaXRoZWxpYWwgY2VsbHMuCgpGb3IgZWFjaCBzY1JOQXNlcSBkYXRhLCBsb29rIGZvciBwb3NzaWJsZSBpbnRlcmFjdGlvbnMgYW5kIG11dHVhbCBtb2R1bGF0aW9ucy4KClVzZSBzcGF0aWFsIGRhdGEgdG8gbG9vayBmb3IgdHVtb3Igc3VicG9wdWxhdGlvbnMgaW4gc3BlY2lhbCBhcmVhcyAoZS5nLiBoeXBveGljIG1ldGFib2xpc20gY2xvc2UgdG8gdGhlIGVwaWRlcm1pcywgaW52YXNpdmUgY2hhcmFjdGVyaXN0aWNzIGNsb3NlIHRvIHRoZSBpbnZhc2l2ZSBmcm9udCBvciBibG9vZC9seW1waGF0aWMgdmVzc2VscywgY2VsbCBzdHJlc3MgY2xvc2UgdG8gaW1tdW5lIGNlbGxzKS4KCkxvb2sgZm9yIHNpZ25zIG9mIHR1bW9yIGV2b2x1dGlvbiwgbW9kdWxhdGVkIGJ5IFRNRS4gQ29tYmluZSBzY1JOQXNlcSBwc2V1ZG90aW1lL3ZlbG9jeXRvIHdpdGggc3BhdGlhbCBkYXRhLgoKQXNzb2NpYXRlIHRoZSByZXN1bHRzIHdpdGggY2xpbmljYWwgY291cnNlLgoKUmVhZCBzY1JOQSBkYXRhIGZyb20gZGlzawoKYGBge3J9CmZpbGVzIDwtIGxpc3QuZmlsZXMoIn4vZGF0YS9tY2Mvc2V1cmF0Lm91dHMvIiwgZnVsbC5uYW1lcyA9IFQpCm1jYy5zYyA8LSBsYXBwbHkoZmlsZXMsIHJlYWRSRFMpCnVubGlzdChsYXBwbHkobWNjLnNjLCBmdW5jdGlvbihzbyl7dW5pcXVlKGFzLmNoYXJhY3RlcihzbyRvcmlnLmlkZW50KSl9KSkKIyAgWzFdICJEMTktMTAxIiAgICAgICAgICAgIkREMjMtMTAzNV9HZXgiICAgICAiRTIxLTEtMzQyIiAgICAgICAgICJFMjEtMS0zNDMiICAgICAgICAgIkUyMS0xLTM0NCIgICAgICAgICAiRTIzLTEtMzQ1IiAgICAgICAgICJFMjMtMS0zNjctTUNDIiAgICAKIyAgWzhdICJFMjMtMS0zODQiICAgICAgICAgIkUyNC0xLTM5M19HZXgiICAgICAiTUNDMDEiICAgICAgICAgICAgICJNQ0MwMiIgICAgICAgICAgICAgIk1DQzA0IiAgICAgICAgICAgICAiTUNDMDUiICAgICAgICAgICAgICJNQ0MwNyIgICAgICAgICAgICAKIyBbMTVdICJNQ0MwOCIgICAgICAgICAgICAgIk1DQzA5IiAgICAgICAgICAgICAiTUNDMTAiICAgICAgICAgICAgICJNQ0MxMiIgICAgICAgICAgICAgIk1DQzEzIiAgICAgICAgICAgICAiTUNDMTQiICAgICAgICAgICAgICJNQ0MxNSIgICAgICAgICAgICAKIyBbMjJdICJNQ0MxNiIgICAgICAgICAgICAgIk1DQzE4IiAgICAgICAgICAgICAiVTIzLTEtMzc4LU1DQy1ORVciCm1jYy5zYyA8LSBtY2Muc2NbLTIyXSAjIFJlbW92ZSBNQ0MxNiAoU0NMQykKYGBgCgpQYXRpZW50L3NhbXBsZSBJRCBtYXBwaW5nCgpgYGB7cn0KCgp0c2NyaWQgPC0gYygiTUNDMDEiPSJCTzE5LTEtMTAwIiwKICAgICAgICAgICAgIk1DQzAyIj0iRTE5LTEtMTAwIiwKICAgICAgICAgICAgIk1DQzAzIj0iRTE5LTEtMTAxIiwKICAgICAgICAgICAgIk1DQzA0Ij0iRTE5LTEtMTAyIiwKICAgICAgICAgICAgIk1DQzA1Ij0iQk8xOS0xLTEwMSIsCiAgICAgICAgICAgICJNQ0MwNiI9IkUxOS0xLTEwMyIsCiAgICAgICAgICAgICJNQ0MwNyI9IkJPMTktMS0xMDIiLAogICAgICAgICAgICAiTUNDMDgiPSJCTzE5LTEtMTAzIiwKICAgICAgICAgICAgIk1DQzA5Ij0iQk8xOS0xLTEwNCIsCiAgICAgICAgICAgICJNQ0MxMCI9IkJPMTktMS0xMDYiLAogICAgICAgICAgICAiTUNDMTEiPSJCTzE5LTEtMTA3IiwKICAgICAgICAgICAgIk1DQzEyIj0iRTE5LTEtMTA0IiwKICAgICAgICAgICAgIk1DQzEzIj0iRTE5LTEtMTA4IiwKICAgICAgICAgICAgIk1DQzE0Ij0iQk8xOS0xLTEwOCIsCiAgICAgICAgICAgICJNQ0MxNSI9IkJPMTktMS0xMDkiLAogICAgICAgICAgICAiTUNDMTYiPSJCTzE5LTEtMTEwIiwKICAgICAgICAgICAgIk1DQzE4Ij0iQk8xOS0xLTExMSIsCiAgICAgICAgICAgICJJbiBwcm9ncmVzcyI9IkJPMjAtMS0xMTIiLAogICAgICAgICAgICAiRDE5LTEwMSI9IkQxOS0xLTEwMSIsCiAgICAgICAgICAgICJERDIzLTEwMzVfR2V4Ij0iRDIzLTEtMzUxIiwKICAgICAgICAgICAgIkluIHByb2dyZXNzIj0iRFUyNC0xLTQwMCIsCiAgICAgICAgICAgICJJbiBwcm9ncmVzcyI9IkUyMS0xLTEwNiIsCiAgICAgICAgICAgICJJbiBwcm9ncmVzcyI9IkUyMS0xLTEwOSIsCiAgICAgICAgICAgICJFMjEtMS0zNDIiPSJFMjEtMS0zNDIiLAogICAgICAgICAgICAiRTIxLTEtMzQzIj0iRTIxLTEtMzQzIiwKICAgICAgICAgICAgIkUyMS0xLTM0NCI9IkUyMS0xLTM0NCIsCiAgICAgICAgICAgICJFMjMtMS0zNDUiPSJFMjMtMS0zNDUiLAogICAgICAgICAgICAiRTIzLTEtMzY3LU1DQyI9IkUyMy0xLTM2NyIsCiAgICAgICAgICAgICJFMjMtMS0zODQiPSJFMjMtMS0zODQiLAogICAgICAgICAgICAiRTI0LTEtMzkzX0dleCI9IkUyNC0xLTM5MyIsCiAgICAgICAgICAgICJJbiBwcm9ncmVzcyI9IlUyMy0xLTM3OCIsCiAgICAgICAgICAgICJVMjMtMS0zNzVfMzc5ODkiPSJVMjMtMS0zNzUiCiAgICAgICAgICAgICkKCnBhdGllbnQuY29kZSA8LSBjKCJFMTktMS0xMDEiPSI4MTE1NjciLAogICAgICAgICAgICAgICAgICAiRTE5LTEtMTAyIj0iODE0NjQyIiwKICAgICAgICAgICAgICAgICAgIkUxOS0xLTEwMyI9IjgxMTU2NyIsCiAgICAgICAgICAgICAgICAgICJFMTktMS0xMDQiPSI4MTE1NjciLAogICAgICAgICAgICAgICAgICAiRTE5LTEtMTA4Ij0iODExNTY3IiwKICAgICAgICAgICAgICAgICAgIkUyNDUwMS8xOSAxIj0iODExNTY3IiwKICAgICAgICAgICAgICAgICAgIkQyMTQzLzIwIDFKIj0iODExNTY3IiwKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDEiPSItIiwgIyBFCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTAyIj0iLSIsICMgRQogICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwMyI9IjE5MjgxNDQ5IiwKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDQiPSIxOTMwNzI4MyIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTA2Ij0iLSIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTA4Ij0iMTk0NjQzODgiLAogICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwOSI9IjE5NDc2ODE2IiwKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMTAiPSItIiwKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMTEiPSItIiwKICAgICAgICAgICAgICAgICAgIkJPMjAtMS0xMTIiPSIyMDM4OTIwMSIsCiAgICAgICAgICAgICAgICAgICJCTzIwLTEtMTEzIj0iLSIsCiAgICAgICAgICAgICAgICAgICJFMjEtMS0zNDIiPSIxOTgxNzgyIiwKICAgICAgICAgICAgICAgICAgIkUyMS0xLTM0MyI9IjE5ODE3ODIiLAogICAgICAgICAgICAgICAgICAiRTIxLTEtMzQ0Ij0iMTk4MTc4MiIsCiAgICAgICAgICAgICAgICAgICJFMjEtMS0xMDYiPSI4ODY1MDMiLAogICAgICAgICAgICAgICAgICAiRTIxLTEtMTA5Ij0iODg2NTAzIiwKICAgICAgICAgICAgICAgICAgIkUyMy0xLTM0NSI9IjIwNTEwMjUiLAogICAgICAgICAgICAgICAgICAiRTIzLTEtMzY3Ij0iMjA1MTAyNSIsCiAgICAgICAgICAgICAgICAgICJFMjMtMS0zODQiPSIyMTMxOTQxIiwKICAgICAgICAgICAgICAgICAgIkUyNC0xLTM5MyI9IjE5ODE3ODIiLAogICAgICAgICAgICAgICAgICAiRDIzLTEtMzUxIj0iMzQ0IiwKICAgICAgICAgICAgICAgICAgIlUyMy0xLTM3NSI9Ii0iLAogICAgICAgICAgICAgICAgICAiVTIzLTEtMzc4Ij0iMzIzNjU0MDIiLAogICAgICAgICAgICAgICAgICAiRFUyNC0xLTQwMCI9Ii0iLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA1NzUiPSIyODM1MDciLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2OTQiPSI3OTgzMTQiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2ODkiPSI3NzIzODkiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2OTUiPSI3OTg5MjAiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2MTQiPSJNQ0MgVFJJTSIsCiAgICAgICAgICAgICAgICAgICIyMlRTQ1ItMDU3MiI9IjU3NzE2OSIsCiAgICAgICAgICAgICAgICAgICIyMlRTQ1ItMDUzOCI9IjQ0NDQ1MCIKICAgICAgICAgICAgICAgICAgKQoKZGF0ZS5pbmNvbWluZyA8LSBjKCJFMTktMS0xMDIiPSIxNy4wMS4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMTktMS0xMDEiPSIxNy4wMS4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMTktMS0xMDMiPSIxMS4wMi4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMTktMS0xMDQiPSIyNS4wMy4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMTktMS0xMDUiPSIyNS4wMy4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMTktMS0xMDgiPSIwMi4wNy4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJFMjEtMS0xMDYiPSIyNS4wMS4yMDIxIiwKICAgICAgICAgICAgICAgICAgICJFMjEtMS0xMDkiPSIxMS4wMy4yMDIxIiwKICAgICAgICAgICAgICAgICAgICJFMjEtMS0zNDIiPSIxNC4xMi4yMDIxIiwKICAgICAgICAgICAgICAgICAgICJFMjEtMS0zNDMiPSIyMi4xMi4yMDIxIiwKICAgICAgICAgICAgICAgICAgICJFMjEtMS0zNDQiPSIxNy4wMS4yMDIyIiwKICAgICAgICAgICAgICAgICAgICJFMjMtMS0zNDUiPSIxMy4wMS4yMDIzIiwKICAgICAgICAgICAgICAgICAgICJFMjMtMS0zNjciPSIxNy4wMy4yMDIzIiwKICAgICAgICAgICAgICAgICAgICJFMjMtMS0zODQiPSIyMS4xMS4yMDIzIiwKICAgICAgICAgICAgICAgICAgICJFMjQtMS0zOTMiPSIyNC4wNC4yMDI0IiwKICAgICAgICAgICAgICAgICAgICJEMjMtMS0zNTEiPSIwNy4wMi4yMDIzIiwKICAgICAgICAgICAgICAgICAgICJEVTI0LTEtNDAwIj0iMjEuMDkuMjAyMyIsCiAgICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwMSI9IjE4LjAxLjIwMTkiLAogICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDIiPSIxMS4wMy4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTAzIj0iMTUuMDMuMjAxOSIsCiAgICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwNCI9IjI0LjA0LjIwMTkiLAogICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDYiPSIxNy4wNS4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTA4Ij0iMTcuMDcuMjAxOSIsCiAgICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwOSI9IjA2LjA4LjIwMTkiLAogICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMTAiPSIwMi4wOS4yMDE5IiwKICAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTExIj0iMjcuMTEuMjAxOSIsCiAgICAgICAgICAgICAgICAgICAiQk8yMC0xLTExMiI9IjA1LjAzLjIwMjAiLAogICAgICAgICAgICAgICAgICAgIkJPMjAtMS0xMTMiPSIxMS4xMi4yMDIwIiwKICAgICAgICAgICAgICAgICAgICJVMjMtMS0zNzUiPSIxMC4wNS4yMDIzIiwKICAgICAgICAgICAgICAgICAgICJVMjMtMS0zNzgiPSIyMS4wOS4yMDIzIgogICAgICAgICAgICAgICAgICAgKQoKIyBQVCBvciBNZXQvVlAgb3IgVk4vVGhlcmFweS9SZXNwb25zZQpzYW1wbGUuc3RhdHVzIDwtIGMoIkUxOS0xLTEwMSI9IlBUL1ZQL0JULy0iLAogICAgICAgICAgICAgICAgICAiRTE5LTEtMTAyIj0iTWV0L1ZQL05haXZlLy0iLAogICAgICAgICAgICAgICAgICAiRTE5LTEtMTAzIj0iTWV0L1ZQL0F2ZWx1bWFiIFNPVC9OUiIsCiAgICAgICAgICAgICAgICAgICJFMTktMS0xMDQiPSJNZXQvVlAvQXZlbHVtYWIgNncvTVIiLAogICAgICAgICAgICAgICAgICAiRTE5LTEtMTA4Ij0iTWV0L1ZQL05pdm9sdW1hYiBTT1QvUiIsCiAgICAgICAgICAgICAgICAgICJFMjQ1MDEvMTkgMSI9Ik1ldC9WUC9OaXZvbHVtYWIgOHcvUiIsCiAgICAgICAgICAgICAgICAgICJEMjE0My8yMCAxSiI9Ik1ldC9WUC9OaXZvbHVtYWIgMTBtL1IiLAogICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwMSI9Ii0vVlAvLS8tIiwgIyBFCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTAyIj0iLS9WUC8tLy0iLCAjIEUKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDMiPSItL1ZQL0JUL1IiLAogICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwNCI9IlBUL1ZOLy0vLSIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTA2Ij0iLS9WUC8tLy0iLAogICAgICAgICAgICAgICAgICAiQk8xOS0xLTEwOCI9Ii0vVlAvLS8tIiwKICAgICAgICAgICAgICAgICAgIkJPMTktMS0xMDkiPSItL1ZQLy0vLSIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTEwIj0iLS9WTi8tLy0iLAogICAgICAgICAgICAgICAgICAiQk8xOS0xLTExMSI9Ii0vVlAvLS8tIiwKICAgICAgICAgICAgICAgICAgIkJPMjAtMS0xMTIiPSItL1ZQLy0vLSIsCiAgICAgICAgICAgICAgICAgICJCTzIwLTEtMTEzIj0iTWV0L1ZQLy0vLSIsCiAgICAgICAgICAgICAgICAgICJFMjEtMS0zNDIiPSJNZXQvVlAvQlQvTlIiLAogICAgICAgICAgICAgICAgICAiRTIxLTEtMzQzIj0iTWV0L1ZQLzF3L05SIiwKICAgICAgICAgICAgICAgICAgIkUyMS0xLTM0NCI9Ik1ldC9WUC81dy9SIiwKICAgICAgICAgICAgICAgICAgIkUyMS0xLTEwNiI9Ii0vLS9CVC8tIiwKICAgICAgICAgICAgICAgICAgIkUyMS0xLTEwOSI9Ii0vLS84dy8tIiwKICAgICAgICAgICAgICAgICAgIkUyMy0xLTM0NSI9Ik1ldC8tL0JULy0iLAogICAgICAgICAgICAgICAgICAiRTIzLTEtMzY3Ij0iTWV0Ly0vOHcvLSIsCiAgICAgICAgICAgICAgICAgICJFMjMtMS0zODQiPSItLy0vQlQvUiIsCiAgICAgICAgICAgICAgICAgICJFMjQtMS0zOTMiPSJNZXQvVlAvQXZlbHVtYWIgQlQvLSIsCiAgICAgICAgICAgICAgICAgICJEMjMtMS0zNTEiPSJMTiBNZXQvLS9OYWl2ZS8tIiwKICAgICAgICAgICAgICAgICAgIlUyMy0xLTM3NSI9Ik1ldC8tLy0vLSIsCiAgICAgICAgICAgICAgICAgICJVMjMtMS0zNzgiPSItLy0vQlQvTlIiLAogICAgICAgICAgICAgICAgICAiRFUyNC0xLTQwMCI9Ii0vLS9OYWl2ZS8tIiwKICAgICAgICAgICAgICAgICAgIjIyVFNDUi0wNTc1Ij0iUFQvVk4vLS8tIiwKICAgICAgICAgICAgICAgICAgIjIyVFNDUi0wNjk0Ij0iUFQvVlAvLS8tIiwKICAgICAgICAgICAgICAgICAgIjIyVFNDUi0wNjg5Ij0iVW5jbGVhci9WUC8tLy0iLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2OTUiPSJQVC9WTi8tLy0iLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2MTQiPSJQVC9WTi8tLy0iLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA1NzIiPSJQVC9WUC8tLy0iLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA1MzgiPSJQVC9WTi8tLy0iCiAgICAgICAgICAgICAgICAgICkKCiMgdGNyIDwtIGMoIkJPMTktMS0xMDAiPTExMywgIyBUIGNlbGwgbnVtYmVycwojICAgICAgICAgICJCTzE5LTEtMTAxIj0tMSwKIyAgICAgICAgICAiQk8xOS0xLTEwMiI9MzcsCiMgICAgICAgICAgIkJPMTktMS0xMDMiPTg4LAojICAgICAgICAgICJCTzE5LTEtMTA0Ij0zODksCiMgICAgICAgICAgIkJPMTktMS0xMDYiPTM1MCwKIyAgICAgICAgICAiQk8xOS0xLTExMSI9MzY1NCwKIyAgICAgICAgICAiQk8xOS0xLTEwMCI9MTEzLAojICAgICAgICAgICJFMjEtMS0zNDIiPTc1LAojICAgICAgICAgICJFMjEtMS0zNDMiPTM1LAojICAgICAgICAgICJFMjEtMS0zNDQiPTM3MiwKIyAgICAgICAgICAiVTIzLTEtMzc4Ij00MiwKIyAgICAgICAgICAiRTIzLTEtMzg0Ij00OSwKIyAgICAgICAgICAiRTI0LTEtMzkzIj0xMDk5LAojICAgICAgICAgICJFMTktMS0xMDIiPS0xLAojICAgICAgICAgICJFMTktMS0xMDQiPS0xLAojICAgICAgICAgICJFMTktMS0xMDgiPS0xCiMgICAgICAgICAgKQoKdGNyIDwtIGMoIkJPMTktMS0xMDAiPTExMywgIyBUIGNlbGwgbnVtYmVycwogICAgICAgICAiQk8xOS0xLTEwMSI9NTQsCiAgICAgICAgICJCTzE5LTEtMTAyIj0zNywKICAgICAgICAgIkJPMTktMS0xMDMiPTg4LAogICAgICAgICAiQk8xOS0xLTEwNCI9Mzg5LAogICAgICAgICAiQk8xOS0xLTEwNiI9MzUwLAogICAgICAgICAiQk8xOS0xLTEwOSI9NDYsCiAgICAgICAgICJCTzE5LTEtMTEwIj0yMSwKICAgICAgICAgIkJPMTktMS0xMTEiPTM2NTQsCiAgICAgICAgICJCTzIwLTEtMTEyIj00NiwKICAgICAgICAgIkJPMjAtMS0xMTMiPTc1NCwKICAgICAgICAgIkUyMS0xLTM0MiI9NzksCiAgICAgICAgICJFMjEtMS0zNDMiPTQ2LAogICAgICAgICAiRTIxLTEtMzQ0Ij0zODIsCiAgICAgICAgICJVMjMtMS0zNzUiPTAsCiAgICAgICAgICJVMjMtMS0zNzgiPTEzMTQsCiAgICAgICAgICJFMTktMS0xMDEiPTAsCiAgICAgICAgICJFMTktMS0xMDIiPTM4OSwKICAgICAgICAgIkUxOS0xLTEwMyI9MTAsCiAgICAgICAgICJFMTktMS0xMDQiPTI1LAogICAgICAgICAiRTE5LTEtMTA4Ij0yMDIsCiAgICAgICAgICJFMjEtMS0xMDYiPTYzMywKICAgICAgICAgIkUyMS0xLTEwOSI9MTExOCwKICAgICAgICAgIkUyMy0xLTM0NSI9MTY2LAogICAgICAgICAiRTIzLTEtMzY3Ij03OCwKICAgICAgICAgIkUyMy0xLTM4NCI9NDksCiAgICAgICAgICJFMjQtMS0zOTMiPTEwOTksCiAgICAgICAgICJEMjMtMS0zNTEiPTAKICAgICAgICAgCiAgICAgICAgICkKCiMgYmNyIDwtIGMoIkJPMTktMS0xMDMiPTQ1LCAjIEIgY2VsbCBudW1iZXJzCiMgICAgICAgICAgIkJPMTktMS0xMDYiPTcwLAojICAgICAgICAgICJCTzE5LTEtMTA4Ij0yMCwKIyAgICAgICAgICAiVTIzLTEtMzc4Ij0zOCwKIyAgICAgICAgICAiRTIzLTEtMzg0Ij00OSwKIyAgICAgICAgICAiRTI0LTEtMzkzIj0xMzY5MQojICAgICAgICAgICkKCmJjciA8LSBjKCJFMTktMS0xMDEiPTEsCiAgICAgICAgICJFMTktMS0xMDIiPTM1NCwKICAgICAgICAgIkUxOS0xLTEwMyI9MTEsCiAgICAgICAgICJFMTktMS0xMDQiPTMsCiAgICAgICAgICJFMTktMS0xMDgiPTMyLAogICAgICAgICAiRTIxLTEtMTA2Ij02MSwKICAgICAgICAgIkUyMS0xLTEwOSI9MTQsCiAgICAgICAgICJFMjEtMS0zNDIiPTE4MDgsCiAgICAgICAgICJFMjEtMS0zNDMiPTI0MCwKICAgICAgICAgIkUyMS0xLTM0NCI9MTIwNiwKICAgICAgICAgIkUyMy0xLTM0NSI9MTA0LAogICAgICAgICAiRTIzLTEtMzY3Ij00NywKICAgICAgICAgIkUyMy0xLTM4NCI9NDksCiAgICAgICAgICJFMjQtMS0zOTMiPTEzNjkxLAogICAgICAgICAiRDIzLTEtMzUxIj01LAogICAgICAgICAiQk8xOS0xLTEwMSI9MSwKICAgICAgICAgIkJPMTktMS0xMDIiPTMsCiAgICAgICAgICJCTzE5LTEtMTAzIj01MSwKICAgICAgICAgIkJPMTktMS0xMDYiPTgyLAogICAgICAgICAiQk8xOS0xLTEwOCI9MjAsCiAgICAgICAgICJCTzE5LTEtMTA5Ij0zMywKICAgICAgICAgIkJPMTktMS0xMTAiPTIsCiAgICAgICAgICJCTzE5LTEtMTExIj0yNTQ1LAogICAgICAgICAiQk8yMC0xLTExMiI9MTE4LAogICAgICAgICAiQk8yMC0xLTExMyI9MTYsCiAgICAgICAgICJVMjMtMS0zNzUiPTAsCiAgICAgICAgICJVMjMtMS0zNzgiPTczCiAgICAgICAgICkKCgpmaXhlZCA8LSBjKCJFMTktMS0xMDQiPSJUMDE5LTAwMjEiLAogICAgICAgICAgICJFMTktMS0xMDMiPSJUMTktMDAxMiIsCiAgICAgICAgICAgIkUxOS0xLTEwOCI9IkQzMzk0LTE5LTFCIiwKICAgICAgICAgICAiRDIxNDMvMjAgMUoiPSJEMjE0My0yQjFKIiwKICAgICAgICAgICAiRTI0NTAxLzE5IDEiPSJFMjQ1MDEtMTktMSIpCgpzcGF0aWFsLmNyeW8gPC0gYygiRTE5LTEtMTA4Ij0iUDI1MjU3XzEwMSIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTA5Ij0iUDI1MjU3XzIwMSIsCiAgICAgICAgICAgICAgICAgICJCTzE5LTEtMTAxIj0iUDI1MjU3XzMwMSIsCiAgICAgICAgICAgICAgICAgICJCTzIwLTEtMTEyIj0iUDI1MjU3XzQwMSIpCgpzcGF0aWFsLmZmcGUgPC0gYygiRTE5LTEtMTAxIj0iRDMwNS0xOSIsCiAgICAgICAgICAgICAgICAgICJFMTktMS0xMDMiPSJUMTktMDAxMiIsCiAgICAgICAgICAgICAgICAgICJFMTktMS0xMDgiPSJEMzM5MC0xOSIsCiAgICAgICAgICAgICAgICAgICIyMlRTQ1ItMDU3NSI9Ijc2MzJfYTEiLAogICAgICAgICAgICAgICAgICAiTWUzMSI9Ik1lMzEiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2OTQiPSI2MDM1Ml8yMi0yYiIsCiAgICAgICAgICAgICAgICAgICIyMlRTQ1ItMDY4OSI9IjMwNTQwXzIyIiwKICAgICAgICAgICAgICAgICAgIjIyVFNDUi0wNjk1Ij0iMjI5N18yM19saWUiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA2MTQiPSIyMS00NDg4M0QiLAogICAgICAgICAgICAgICAgICAiMjJUU0NSLTA1NzIiPSJFMjAyMS0yNDY2Mi0xYyIsCiAgICAgICAgICAgICAgICAgICIyMlRTQ1ItMDUzOCI9IjE0ODlJSS0yMSIpCmBgYAoKYGBge3J9CiMgc2FtcGxlcy5tZXRhIDwtIGRhdGEuZnJhbWUoInNhbXBsZWlkIj11bmxpc3QobGFwcGx5KG1jYy5zYywgZnVuY3Rpb24oc28pe3VuaXF1ZShhcy5jaGFyYWN0ZXIoc28kb3JpZy5pZGVudCkpfSkpLCAic2NSTkEiPVRSVUUsIHJvdy5uYW1lcyA9IHVubGlzdChsYXBwbHkobWNjLnNjLCBmdW5jdGlvbihzbyl7dW5pcXVlKGFzLmNoYXJhY3RlcihzbyRvcmlnLmlkZW50KSl9KSkpCnNhbXBsZXMubWV0YSA8LSBhc190aWJibGUoYXMuZGF0YS5mcmFtZShwYXRpZW50LmNvZGUpLCByb3duYW1lcyA9ICJzYW1wbGUuaGlzdG8iKQpzYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUoZGF0ZS5pbmNvbWU9cGx5cjo6bWFwdmFsdWVzKHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyhkYXRlLmluY29taW5nKSwgdG89ZGF0ZS5pbmNvbWluZykpICU+JSBtdXRhdGUoZGF0ZS5pbmNvbWU9Y2FzZV93aGVuKGRhdGUuaW5jb21lPT1zYW1wbGUuaGlzdG8gfiBOQSwgVFJVRSB+IGRhdGUuaW5jb21lKSkKc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKGNsaW5pY2FsID0gcGx5cjo6bWFwdmFsdWVzKHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyhzYW1wbGUuc3RhdHVzKSwgdG89c2FtcGxlLnN0YXR1cykpCnNhbXBsZXMubWV0YS5jbGluaWNhbCA8LSBhc190aWJibGUodChhcy5kYXRhLmZyYW1lKHN0cnNwbGl0KHNhbXBsZXMubWV0YSRjbGluaWNhbCwiLyIpKSkpCmNvbG5hbWVzKHNhbXBsZXMubWV0YS5jbGluaWNhbCkgPC0gYygibG9jIiwidmlydXMiLCJ0cmVhdG1lbnQiLCJyZXNwb25zZSIpCnNhbXBsZXMubWV0YSA8LSBjYmluZChzYW1wbGVzLm1ldGEsIHNhbXBsZXMubWV0YS5jbGluaWNhbCkKc2FtcGxlcy5tZXRhJGNsaW5pY2FsIDwtIE5VTEwKCgpyb3duYW1lcyhzYW1wbGVzLm1ldGEpIDwtIHBseXI6Om1hcHZhbHVlcyhyb3duYW1lcyhzYW1wbGVzLm1ldGEpLCBmcm9tPW5hbWVzKHRzY3JpZCksIHRvPXRzY3JpZCkKcm93bmFtZXMoc2FtcGxlcy5tZXRhKSA8LSBnc3ViKCJfR2V4IiwiIixyb3duYW1lcyhzYW1wbGVzLm1ldGEpKQpyb3duYW1lcyhzYW1wbGVzLm1ldGEpIDwtIGdzdWIoIi1NQ0NbQS1aXFwtXSoiLCIiLHJvd25hbWVzKHNhbXBsZXMubWV0YSkpCiMgc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKHBhdGllbnQ9cGx5cjo6bWFwdmFsdWVzKHNhbXBsZXMubWV0YSRzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMocGF0aWVudC5jb2RlKSwgdG89cGF0aWVudC5jb2RlKSkgJT4lIG11dGF0ZShwYXRpZW50PWNhc2Vfd2hlbihwYXRpZW50PT1yb3duYW1lcyhzYW1wbGVzLm1ldGEpIH4gTkEsIFRSVUUgfiBwYXRpZW50KSkKc2FtcGxlcy5tZXRhIDwtIHNhbXBsZXMubWV0YSAlPiUgbXV0YXRlKHNjcm5hPXNhbXBsZS5oaXN0bykgJT4lIG11dGF0ZShzY3JuYT1jYXNlX3doZW4oc2NybmEgJWluJSB0c2NyaWQgfiBzY3JuYSwgVFJVRX5OQSkpICU+JSBtdXRhdGUoc2NybmE9cGx5cjo6bWFwdmFsdWVzKHNjcm5hLCBmcm9tPXRzY3JpZCwgdG89bmFtZXModHNjcmlkKSkpCnNhbXBsZXMubWV0YSA8LSBzYW1wbGVzLm1ldGEgJT4lIG11dGF0ZSh0Y3I9cGx5cjo6bWFwdmFsdWVzKHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyh0Y3IpLCB0bz10Y3IpLCBiY3I9cGx5cjo6bWFwdmFsdWVzKHNhbXBsZS5oaXN0bywgZnJvbT1uYW1lcyhiY3IpLCB0bz1iY3IpKSAlPiUgbXV0YXRlKHRjcj1jYXNlX3doZW4odGNyPT1zYW1wbGUuaGlzdG8gfiBOQSwgVFJVRSB+IHRjciksIGJjcj1jYXNlX3doZW4oYmNyPT1zYW1wbGUuaGlzdG8gfiBOQSwgVFJVRSB+IGJjcikpCnNhbXBsZXMubWV0YSA8LSBzYW1wbGVzLm1ldGEgJT4lIG11dGF0ZShzblJOQT1wbHlyOjptYXB2YWx1ZXMoc2FtcGxlLmhpc3RvLCBmcm9tPW5hbWVzKGZpeGVkKSwgdG89Zml4ZWQpKSAlPiUgbXV0YXRlKHNuUk5BPWNhc2Vfd2hlbihzblJOQT09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiBzblJOQSkpCgpzYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUoc3BhdGlhbC5jcnlvPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMoc3BhdGlhbC5jcnlvKSwgdG89c3BhdGlhbC5jcnlvKSkgJT4lIG11dGF0ZShzcGF0aWFsLmNyeW89Y2FzZV93aGVuKHNwYXRpYWwuY3J5bz09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiBzcGF0aWFsLmNyeW8pKQpzYW1wbGVzLm1ldGEgPC0gc2FtcGxlcy5tZXRhICU+JSBtdXRhdGUoc3BhdGlhbC5mZnBlPXBseXI6Om1hcHZhbHVlcyhzYW1wbGUuaGlzdG8sIGZyb209bmFtZXMoc3BhdGlhbC5mZnBlKSwgdG89c3BhdGlhbC5mZnBlKSkgJT4lIG11dGF0ZShzcGF0aWFsLmZmcGU9Y2FzZV93aGVuKHNwYXRpYWwuZmZwZT09c2FtcGxlLmhpc3RvIH4gTkEsIFRSVUUgfiBzcGF0aWFsLmZmcGUpKQpgYGAKCmBgYHtyfQpzYW1wbGVzLm1ldGEgJT4lIGFycmFuZ2UocGF0aWVudC5jb2RlKQp3cml0ZS5jc3Yoc2FtcGxlcy5tZXRhICU+JSBhcnJhbmdlKHBhdGllbnQuY29kZSksICJ+L2RhdGEvbWNjL2Nhc2VyZXBvcnRfODExNTQ3L3RzY3JfcGF0aWVudF9zYW1wbGUuY3N2IikKYGBgCgpgYGB7cn0KCmBgYAo=</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKVGhpcyBpcyBhbiBbUiBNYXJrZG93bl0oaHR0cDovL3JtYXJrZG93bi5yc3R1ZGlvLmNvbSkgTm90ZWJvb2suIFdoZW4geW91IGV4ZWN1dGUgY29kZSB3aXRoaW4gdGhlIG5vdGVib29rLCB0aGUgcmVzdWx0cyBhcHBlYXIgYmVuZWF0aCB0aGUgY29kZS4gCgpUcnkgZXhlY3V0aW5nIHRoaXMgY2h1bmsgYnkgY2xpY2tpbmcgdGhlICpSdW4qIGJ1dHRvbiB3aXRoaW4gdGhlIGNodW5rIG9yIGJ5IHBsYWNpbmcgeW91ciBjdXJzb3IgaW5zaWRlIGl0IGFuZCBwcmVzc2luZyAqQ3RybCtTaGlmdCtFbnRlciouIAoKCgpgYGB7ciBzZXR1cCwgaW5jbHVkZT1GQUxTRX0KIyBTdXBwcmVzcyB3YXJuaW5ncyBpbiB0aGUgd2hvbGUgZG9jdW1lbnQKa25pdHI6Om9wdHNfY2h1bmskc2V0KHdhcm5pbmcgPSBGQUxTRSwgbWVzc2FnZSA9IEZBTFNFLCBjYWNoZSA9IFRSVUUpCmBgYAoKCmBgYHtyfQpsaWJyYXJ5KHRpZHlyKQpsaWJyYXJ5KGRwbHlyKQpsaWJyYXJ5KGdncGxvdDIpCmxpYnJhcnkoUkNvbG9yQnJld2VyKQoKbGlicmFyeShTZXVyYXQpCmxpYnJhcnkoc2NSZXBlcnRvaXJlKQojIGxpYnJhcnkoQmF5ZXNTcGFjZSkKIyBsaWJyYXJ5KFNwYVRhbGspCiMgbGlicmFyeShwb2NoaSkKIyBsaWJyYXJ5KGluZmVyY252KQoKIyBsaWJyYXJ5KG9yZy5Icy5lZy5kYikKIyBsaWJyYXJ5KGNsdXN0ZXJQcm9maWxlcikKIyBsaWJyYXJ5KGVucmljaHBsb3QpCiMgbGlicmFyeShET1NFKQoKbGlicmFyeShmdXR1cmUpCmxpYnJhcnkoQVVDZWxsKQpsaWJyYXJ5KE1hdHJpeCkKCmBgYAoKCmBgYHtyfQoKb3B0aW9ucyhmdXR1cmUuZ2xvYmFscy5tYXhTaXplID0gNTAqMTAyNCoxMDI0XjIpCnNldC5zZWVkKDEwMCkKIyBzZXR3ZCgifi9kYXRhL1Zpc2l1bV9NZWw1LyIpCmAlIWluJWAgPC0gTmVnYXRlKGAlaW4lYCkKCmNvbG9ycyA8LSByYmluZChicmV3ZXIucGFsKDgsIG5hbWUgPSAiU2V0MiIpLCBicmV3ZXIucGFsKDgsIG5hbWUgPSAiRGFyazIiKSkKY29sb3JzIDwtIGMoY29sb3JzKSAjIExpbmVhcml6ZQpjb2xvcnMgPC0gYyhjb2xvcnMsIGJyZXdlci5wYWwoMTIsIG5hbWUgPSAiU2V0MyIpKQojIG5hbWVzKGNvbG9ycykgPC0gcGFzdGUoIkMiLHNlcShsZW5ndGgoY29sb3JzKSksc2VwPSIiKQoKYGBgCgoKYGBge3J9CnV2ZWFsLmZpeGVkLjEgPC0gcmVhZFJEUygifi9kYXRhL0ZpeGVkX1JOQV9VdmVhbF9HSVNUL0ZpeGVkX3V2ZWFsXzIwMjQwNzA0L291dHMvcGVyX3NhbXBsZV9vdXRzLyIpCnV2ZWFsLmZpeGVkLjIgPC0gcmVhZFJEUygifi9kYXRhL0ZpeGVkX1JOQV9VdmVhbF9HSVNUL0ZpeGVkX3V2ZWFsXzIwMjQwNzA0L291dHMvcGVyX3NhbXBsZV9vdXRzLyIpCgpgYGAKCgoKCgo=</div>
 
 
 
@@ -2174,7 +1862,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("rnotebook-tscr_mcc.Rmd");
+  window.initializeSourceEmbed("rnotebook-uveal_melanoma_fixedrna.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>

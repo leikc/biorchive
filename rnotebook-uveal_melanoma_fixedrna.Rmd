@@ -1,0 +1,67 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+
+
+```{r setup, include=FALSE}
+# Suppress warnings in the whole document
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+
+library(Seurat)
+library(scRepertoire)
+# library(BayesSpace)
+# library(SpaTalk)
+# library(pochi)
+# library(infercnv)
+
+# library(org.Hs.eg.db)
+# library(clusterProfiler)
+# library(enrichplot)
+# library(DOSE)
+
+library(future)
+library(AUCell)
+library(Matrix)
+
+```
+
+
+```{r}
+
+options(future.globals.maxSize = 50*1024*1024^2)
+set.seed(100)
+# setwd("~/data/Visium_Mel5/")
+`%!in%` <- Negate(`%in%`)
+
+colors <- rbind(brewer.pal(8, name = "Set2"), brewer.pal(8, name = "Dark2"))
+colors <- c(colors) # Linearize
+colors <- c(colors, brewer.pal(12, name = "Set3"))
+# names(colors) <- paste("C",seq(length(colors)),sep="")
+
+```
+
+
+```{r}
+uveal.fixed.1 <- readRDS("~/data/Fixed_RNA_Uveal_GIST/Fixed_uveal_20240704/outs/per_sample_outs/")
+uveal.fixed.2 <- readRDS("~/data/Fixed_RNA_Uveal_GIST/Fixed_uveal_20240704/outs/per_sample_outs/")
+
+```
+
+
+
+
+

@@ -1,0 +1,251 @@
+---
+title: "GIST (Gastrointestinal stromal tumor) Fixed RNA sequencing"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+# Suppress warnings in the whole document
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = TRUE)
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+
+library(Seurat)
+library(scRepertoire)
+# library(BayesSpace)
+# library(SpaTalk)
+# library(pochi)
+# library(infercnv)
+
+# library(org.Hs.eg.db)
+# library(clusterProfiler)
+# library(enrichplot)
+# library(DOSE)
+
+library(future)
+library(AUCell)
+library(Matrix)
+
+```
+
+```{r}
+options(future.globals.maxSize = 50*1024*1024^2)
+set.seed(100)
+# setwd("~/data/Visium_Mel5/")
+`%!in%` <- Negate(`%in%`)
+
+colors <- rbind(brewer.pal(8, name = "Set2"), brewer.pal(8, name = "Dark2"))
+colors <- c(colors) # Linearize
+colors <- c(colors, brewer.pal(12, name = "Set3"))
+# names(colors) <- paste("C",seq(length(colors)),sep="")
+```
+
+```{r}
+# gist <- list.files("~/data/Fixed_RNA_Uveal_GIST/Fixed_GIST_20240809/outs/per_sample_outs/", full.names = T)
+# 
+# import.h5 <- function(filenames){
+#   lapply(filenames, function(s){
+#   counts <- Read10X_h5(sprintf("%s/count/sample_filtered_feature_bc_matrix.h5", s))
+#   n <- rev(strsplit(s,"/")[[1]])[1]
+#   so <- CreateSeuratObject(counts, project=n)
+#   so
+#   })
+# }
+# 
+# seurats.gist <- import.h5(gist)
+# 
+# cal.percent.mt <- function(so){
+#   so[["percent.mt"]] <- PercentageFeatureSet(so, "^MT-")
+#   so
+# }
+# 
+# seurats.gist <- lapply(seurats.gist, cal.percent.mt)
+# 
+# seurats.gist <- lapply(seurats.gist, function(so){
+#   subset(so, nFeature_RNA > 200 & nCount_RNA > 600 & percent.mt < 30)
+# })
+# 
+# seurats.gist <- lapply(seurats.gist, function(so){
+#   so <- NormalizeData(so)
+#   so <- CellCycleScoring(so, s.features = cc.genes$s.genes, g2m.features = cc.genes$g2m.genes)
+#   so$CC.Difference <- so$S.Score - so$G2M.Score
+#   so <- SCTransform(so, vars.to.regress = c("percent.mt","CC.Difference"))
+#   so <- RunPCA(so)
+#   so <- so %>% FindNeighbors(dims=1:20, verbose=F) %>% FindClusters %>% RunUMAP(dims=1:20, verbose=F)
+#   so
+# })
+# 
+# reformat.vlnplot <- function(plist){
+#   patchwork::wrap_plots(lapply(plist, function(p){p+labs(x="")+NoLegend()+theme(axis.text.x = element_text(angle=0, hjust=0.5, vjust=0))}), ncol=3)
+# }
+# 
+# patchwork::wrap_plots(plots=lapply(seurats.gist, function(so){reformat.vlnplot(VlnPlot(so, c("COL3A1","COL1A1","PTPRC"), pt.size=0, combine=F))}), ncol=1)
+
+```
+
+Cell type annotation
+
+```{r}
+# saveRDS(seurats.gist, "~/data/Fixed_RNA_Uveal_GIST/seurats_GIST_20241029.rds")
+
+seurats.gist <- readRDS("~/data/Fixed_RNA_Uveal_GIST/seurats_GIST_20241029_annotated.rds")
+
+library(SingleR)
+library(celldex)
+set.seed(100)
+
+sces <- lapply(seurats.gist, as.SingleCellExperiment)
+
+hpca.se <- HumanPrimaryCellAtlasData()
+sces <- lapply(sces, SingleR, ref = hpca.se, assay.type.test=1, labels = hpca.se$label.main)
+
+```
+
+```{r}
+seurats.gist <- readRDS("~/data/Fixed_RNA_Uveal_GIST/seurats_GIST_20241029_annotated.rds")
+
+seurats.gist[[1]]$label.curated <- plyr::mapvalues(seurats.gist[[1]]$label, from=c("Chondrocytes","Fibroblasts","Tissue_stem_cells","Smooth_muscle_cells","MSC","Neurons"),to=c(rep("Tumor",6)))
+seurats.gist[[2]]$label.curated <- plyr::mapvalues(seurats.gist[[2]]$label, from=c("Chondrocytes","Fibroblasts","Tissue_stem_cells","Smooth_muscle_cells"),to=c(rep("Tumor",4)))
+seurats.gist[[3]]$label.curated <- plyr::mapvalues(seurats.gist[[3]]$label, from=c("Chondrocytes","Fibroblasts","Tissue_stem_cells","Smooth_muscle_cells","MSC"),to=c(rep("Tumor",5)))
+seurats.gist[[4]]$label.curated <- plyr::mapvalues(seurats.gist[[4]]$label, from=c("Chondrocytes","Fibroblasts","Tissue_stem_cells","Smooth_muscle_cells"),to=c(rep("Tumor",4)))
+
+combined <- merge(seurats.gist[[1]], seurats.gist[2:4])
+DefaultAssay(combined) <- "RNA"
+combined <- JoinLayers(combined)
+combined <- SCTransform(combined, vars.to.regress = c("percent.mt","CC.Difference"))
+combined <- RunPCA(combined)
+combined <- harmony::RunHarmony(combined, "orig.ident")
+ElbowPlot(combined, ndims = 50, reduction="harmony")
+combined <- combined %>% RunUMAP(dims=1:15, reduction="harmony")
+
+saveRDS(combined, "~/data/Fixed_RNA_Uveal_GIST/seurat_GIST_annotated_combined_20241105.rds")
+
+immune <- subset(combined, label.curated %in% c("T_cells","NK_cell"))
+
+immune <- SCTransform(immune, vars.to.regress = c("percent.mt","CC.Difference"))
+immune <- RunPCA(immune)
+immune <- harmony::RunHarmony(immune, "orig.ident")
+immune <- immune %>% FindNeighbors(dims=1:10, redution="harmony") %>% FindClusters %>% RunUMAP(dims=1:10, reduction="harmony")
+immune <- RunTSNE(immune, dims=1:10, reduction="harmony")
+
+immune.markers <- FindAllMarkers(immune, only.pos = TRUE)
+
+immune$celltype <- plyr::mapvalues(immune$seurat_clusters, from=c(11,13,2,12,7,0,6,4,3,9,10,1,5,8), to=c("CD4+ Treg","Macrophage",rep("CD8+ Teff",3),rep("CD4+ T",2),rep("NK cell",4),rep("Ambiguous",3)))
+
+```
+
+Meta data
+
+```{r}
+meta <- data.frame("ID"=unique(seurats.gist$orig.ident), row.names = unique(seurats.gist$orig.ident))
+meta$year <- c(2007,2016,2022,2017)
+meta$type <- c("Primary","Metastatic","Metastatic","Metastatic")
+meta$loc <- c("Lower abdomen","Peritoneum","Peritoneum","Left lower abdomen")
+meta$treatment <- c("Untreated","Imatinib pretreatment","Post treatment","Imatinib pretreatment")
+```
+
+```{r}
+seurats.gist <- readRDS("~/data/Fixed_RNA_Uveal_GIST/seurat_GIST_annotated_combined_20241105.rds")
+
+seurats.gist <- FindNeighbors(seurats.gist, dims=1:15, reduction="harmony")
+seurats.gist <- FindClusters(seurats.gist)
+
+```
+
+```{r}
+DimPlot(seurats.gist, label=T, repel=T)
+VlnPlot(seurats.gist, c("COL3A1","COL1A1","ACTA2","PECAM1","VIM"), pt.size=0)
+VlnPlot(seurats.gist, c("PTPRC","CD3D","C1QA","C1QB","JCHAIN","NKG7"), pt.size=0)
+```
+
+```{r}
+tumor <- subset(seurats.gist, label.curated == "Tumor")
+tumor <- tumor %>% SCTransform(vars.to.regress = c("percent.mt","CC.Difference")) %>% RunPCA %>% harmony::RunHarmony("orig.ident")
+tumor <- tumor %>% FindNeighbors(dims=1:15, reduction="harmony") %>% FindClusters %>% RunTSNE(dims = 1:15, reduction="harmony")
+# stromal <- subset(seurats.gist, seurat_clusters %in% c(11,15))
+# immune <- subset(seurats.gist, seurat_clusters %in% c(3,6,10,16,17))
+# mono <- subset(seurats.gist, seurat_clusters %in% c(7,14))
+# 
+# immune <- immune %>% SCTransform(vars.to.regress = c("percent.mt","CC.Difference")) %>% RunPCA %>% harmony::RunHarmony("orig.ident")
+# immune <- immune %>% FindNeighbors(dims=1:10, reduction="harmony") %>% FindClusters %>% RunUMAP(dims = 1:10, reduction="harmony")
+```
+
+```{r}
+tumor <- RunUMAP(tumor, dims=1:15, reduction="harmony")
+DimPlot(tumor, label=T, repel=T)
+# VlnPlot(immune, c("GZMB","GNLY","GZMK","NKG7","GZMA","TYROBP","C1QA","CXCL13","CD8A","PTPRC","LAG3","CD4","LTB","CD3E","CD3D","IL7R","CCR7","FOXP3","CTLA4","MZB1"), stack = T, flip = T, sort=T)
+```
+
+```{r}
+tumor$label.curated <- plyr::mapvalues(tumor$seurat_clusters, from=c(0:9,11:12,10,13), to=c(rep("Tumor",12), rep("Fibroblast",2)))
+
+seurats.gist$label.curated[colnames(seurats.gist) %in% colnames(tumor)] <- as.character(tumor$label.curated)
+```
+
+```{r}
+mono <- subset(seurats.gist, label.curated %in% c("Macrophage","Monocyte","Ambiguious","DC"))
+mono <- mono %>% SCTransform(vars.to.regress = c("percent.mt","CC.Difference")) %>% RunPCA %>% harmony::RunHarmony("orig.ident")
+mono <- mono %>% FindNeighbors(dims=1:10, reduction="harmony") %>% FindClusters %>% RunUMAP(dims = 1:10, reduction="harmony")
+```
+
+```{r}
+DimPlot(mono, label=T, repel=T)
+```
+
+```{r}
+mono$label.curated <- plyr::mapvalues(mono$seurat_clusters, from=c(0,4,5,6,8,7,3,9,10,1,2), to=c(rep("Macrophage",5),"Endothelial cell","cDC","pDC","Plasma cell", rep("Tumor",2)))
+
+seurats.gist$label.curated[colnames(seurats.gist) %in% colnames(mono)] <- as.character(mono$label.curated)
+```
+
+```{r}
+immune <- subset(seurats.gist, label.curated %in% c("T_cells","NK_cell"))
+immune <- immune %>% SCTransform(vars.to.regress = c("percent.mt","CC.Difference")) %>% RunPCA %>% harmony::RunHarmony("orig.ident")
+immune <- immune %>% FindNeighbors(dims=1:10, reduction="harmony") %>% FindClusters %>% RunUMAP(dims = 1:10, reduction="harmony")
+```
+
+```{r}
+DimPlot(immune, label=T, repel=T)
+```
+
+```{r}
+immune$label.curated <- plyr::mapvalues(immune$seurat_clusters, from=c(0,9,3,1,4,7,2,5,8,6), to=c("Tumor","Macrophage","CD8+ T",rep("CD4+ T",2),"CD4+ Treg",rep("NK cell",4)))
+
+seurats.gist$label.curated[colnames(seurats.gist) %in% colnames(immune)] <- as.character(immune$label.curated)
+
+```
+
+```{r}
+tumor.2 <- subset(seurats.gist, label.curated=="Tumor")
+tumor.2 <- tumor.2 %>% SCTransform(vars.to.regress = c("percent.mt","CC.Difference")) %>% RunPCA %>% harmony::RunHarmony("orig.ident")
+tumor.2 <- tumor.2 %>% FindNeighbors(dims=1:15, reduction="harmony") %>% FindClusters %>% RunTSNE(dims = 1:15, reduction="harmony")
+```
+
+```{r}
+
+```
+
+```{r}
+saveRDS(seurats.gist, "~/data/Fixed_RNA_Uveal_GIST/seurat_GIST_annotated_combined_20241206.rds")
+```
+
+```{r}
+seurats.gist$label.curated <- factor(seurats.gist$label.curated, levels=c("Endothelial cell","Fibroblast","Macrophage","cDC","pDC","Plasma cell","NK cell","CD8+ T","CD4+ Treg","CD4+ T","Tumor"))
+seurats.gist$year <- factor(plyr::mapvalues(seurats.gist$orig.ident, from=meta$ID, to=meta$year), levels=c(2007,2016,2017,2022))
+
+ggplot(as.data.frame(table(seurats.gist$label.curated, seurats.gist$year)) %>% group_by(Var2) %>% mutate(proportion=Freq/sum(Freq)),
+       aes(x=Var2, y=proportion, fill=Var1)) + geom_col() + 
+scale_fill_brewer(type="qual", palette = 3)+
+theme_classic() + xlab("Year") + guides(fill=guide_legend(title="Seurat cluster"))
+```
+
+```{r}
+ggplot(as.data.frame(table(seurats.gist$label.curated, seurats.gist$year)) %>% group_by(Var2) %>% mutate(Proportion=Freq/sum(Freq)),
+       aes(x=Var2, y=Freq, fill=Var1)) + geom_col() + 
+scale_fill_brewer(type="qual", palette = 3)+
+theme_classic() + xlab("Year") + guides(fill=guide_legend(title="Cell type"))
+```

@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 ```{r}
-suppressWarnings({
+suppressMessages({
   library(Seurat)
   library(ggplot2)
   library(future)
@@ -23,6 +23,21 @@ source("utils/plot_func.R")
 ```
 
 ## TLS analysis with Me31 from Weng-Onn, using BayesSpace data
+
+```{r}
+seurats <- readRDS("~/data/wengonn/seurat_obs_karolinska_all.rds")
+me31 <- seurats[[2]]
+me31
+```
+
+```{r}
+SpatialDimPlot(me31)
+DimPlot(me31)
+```
+
+```{r}
+
+```
 
 Read data from disk
 
@@ -82,10 +97,44 @@ me31.bayes$sce.enhanced$group <- so.for.umap$group
 clusterPlot(me31.bayes$sce.enhanced, label = "group") + scale_fill_manual(values = brewer.pal(8, "Set1"))
 ```
 
-Assign
+Determine tumor-TLS edge based on CHGA expression
 
 ```{r}
+so.for.umap.tls <- subset(so.for.umap, group=="Immune")
+so.for.umap.tls
+chga.thres <- quantile(so.for.umap.tls[["RNA"]]$data["CHGA",], 0.7)
+chga.thres
+tls.tumor.idents <- plyr::mapvalues(so.for.umap.tls[["RNA"]]$data["CHGA",] > chga.thres, from=c(TRUE, FALSE), to=c("Tumor-TLS", "TLS"))
+so.for.umap$group2 <- plyr::mapvalues(colnames(so.for.umap), from=names(tls.tumor.idents), to=tls.tumor.idents)
+so.for.umap$group2 <- factor(gsub("subspot_[0-9\\.]+", "Tumor", so.for.umap$group2), levels=c("TLS","Tumor-TLS","Tumor"))
+table(so.for.umap$group2)
+```
 
+```{r}
+me31.bayes$sce.enhanced$group2 <- factor(so.for.umap$group2, levels=c("TLS","Tumor-TLS","Tumor"))
+custom.cols <- brewer.pal(8, "Set1")[c(1,3,2)]
+clusterPlot(me31.bayes$sce.enhanced, label = "group2") + scale_fill_manual(values = custom.cols)
+DimPlot(so.for.umap, group.by="group2", cols=custom.cols) + xlab("UMAP 1") + ylab("UMAP 2") + ggtitle("")
+```
+
+Check gene expression in tumor-TLS regions
+
+```{r}
+l <- VlnPlot(so.for.umap, c("OAS2","IFI27","MX1","PARP14","PARP9","IRF9"), pt.size=0, group.by="group2", col=custom.cols, combine=FALSE)
+patchwork::wrap_plots(lapply(l, function(x) x+xlab("") + ylab("") + theme(legend.position="none", plot.title = element_text(size=15))), ncol=3)
+
+l <- VlnPlot(so.for.umap, c("CCL21","CCR7"), pt.size=0, group.by="group2", col=custom.cols, combine=FALSE)
+patchwork::wrap_plots(lapply(l, function(x) x+coord_cartesian(ylim=c(0,1))+xlab("") + ylab("") + theme(legend.position="none", plot.title = element_text(size=15))), ncol=4)
+
+l <- VlnPlot(so.for.umap, c("IGHG1","IGHM","PTGDS","JCHAIN","IRF7","IRF8"), pt.size=0, group.by="group2", col=custom.cols, combine=FALSE)
+patchwork::wrap_plots(lapply(l, function(x) x+coord_cartesian(ylim=c(0,1))+xlab("") + ylab("") + theme(legend.position="none", plot.title = element_text(size=15))), ncol=4)
+```
+
+Check gene expression in spatial coordinates
+
+```{r}
+plot.bayesspace(me31.bayes$sce.enhanced, me31.bayes$sce, c("OAS2","IFI27","MX1","PARP14","PARP9","IRF9"), 3)
+plot.bayesspace(me31.bayes$sce.enhanced, me31.bayes$sce, c("IGHG1","IGHM","PTGDS","JCHAIN","IRF7","IRF8"), 3)
 ```
 
 ```{r}
