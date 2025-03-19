@@ -73,5 +73,6 @@ run.fgsea <- function(marker.df, genesets, minSize=10, maxSize=800, use.p="p_val
                             stats    = deg.rank,
                             minSize  = minSize,
                             maxSize  = maxSize)
+  fgseaRes$leadingEdge <- sapply(fgseaRes$leadingEdge, function(l){paste(l, collapse=",")})
   fgseaRes
 }
