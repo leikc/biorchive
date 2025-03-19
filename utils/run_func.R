@@ -59,3 +59,10 @@ run.monocle3 <- function(so, assay.name="SCT", ndim=50){
   cds <- learn_graph(cds)
   cds
 }
+
+run.fgsea <- function(marker.df, use.p="p_val_adj", pthres=0.05){
+  deg.sig <- marker.df %>% filter(get(use.p) < pthres)
+  deg.rank <- deg.sig$avg_log2FC
+  names(deg.rank) <- rownames(deg.sig)
+  
+}
