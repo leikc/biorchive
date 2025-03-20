@@ -36,11 +36,12 @@ fgsea.barplot <- function(fgseares, showCategory=10, label.size=4, color="pval")
     res$generatio <- sapply(res$leadingEdge, length) / res$size
   }
   df <- res %>% 
+    filter(!is.na(NES)) %>%
     group_by(NES < 0) %>% 
     slice_max(n=showCategory, order_by=abs(NES), with_ties = FALSE) %>% 
     arrange(order_by=NES)
   df$pathway <- factor(df$pathway, levels=df$pathway)
-  
+  x.max <- max(abs(df$NES))
   ggplot(df, aes(y=factor(pathway), x=NES, fill=get(color))) + 
     geom_text(aes(label = pathway, x = ifelse(NES > 0, -0.05, 0.05), group=`NES < 0`, hjust=ifelse(NES > 0, 1,0)), position = position_dodge(width = 1), size = label.size) +
     geom_col() +
@@ -50,5 +51,6 @@ fgsea.barplot <- function(fgseares, showCategory=10, label.size=4, color="pval")
           axis.line.y.left = element_blank(), axis.ticks.y = element_blank()) + 
     xlab("NES") +
     geom_vline(xintercept = 0) + 
-    scale_fill_gradient(color, low = "green", high="red")
+    scale_fill_gradient(color, low = "green", high="red") +
+    scale_x_continuous(limits = c(-x.max, x.max))
 }
