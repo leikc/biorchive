@@ -16,14 +16,13 @@ gsea.barplot <- function(gse, showCategory=10){
     scale_fill_gradient(low = "blue", high="red")
 }
 
-plot.bayesspace <- function(sce.enhanced, sce, features, ncol=4, compare=FALSE) {
+plot.bayesspace <- function(sce.enhanced, sce=NULL, features, ncol=4, compare=FALSE) {
   enhanced.plots <- purrr::map(features, function(x) featurePlot(sce.enhanced, x))
-  spot.plots <- purrr::map(features, function(x) featurePlot(sce, x))
-  # options(repr.plot.height=15, repr.plot.width=20)
   
   if(!compare){
     patchwork::wrap_plots(c(enhanced.plots), ncol=ncol)
   } else {
+    spot.plots <- purrr::map(features, function(x) featurePlot(sce, x))
     patchwork::wrap_plots(c(enhanced.plots, spot.plots), ncol=ncol)
   }
 }
