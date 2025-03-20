@@ -27,3 +27,28 @@ plot.bayesspace <- function(sce.enhanced, sce, features, ncol=4, compare=FALSE) 
     patchwork::wrap_plots(c(enhanced.plots, spot.plots), ncol=ncol)
   }
 }
+
+fgsea.barplot <- function(fgseares, showCategory=10, label.size=4, color="pval"){
+  res <- fgseares
+  if(class(res$leadingEdge)=="character"){
+    res$generatio <- sapply(strsplit(res$leadingEdge,","), length) / res$size
+  } else { # list
+    res$generatio <- sapply(res$leadingEdge, length) / res$size
+  }
+  df <- res %>% 
+    group_by(NES < 0) %>% 
+    slice_max(n=showCategory, order_by=abs(NES), with_ties = FALSE) %>% 
+    arrange(order_by=NES)
+  df$pathway <- factor(df$pathway, levels=df$pathway)
+  
+  ggplot(df, aes(y=factor(pathway), x=NES, fill=get(color))) + 
+    geom_text(aes(label = pathway, x = ifelse(NES > 0, -0.05, 0.05), group=`NES < 0`, hjust=ifelse(NES > 0, 1,0)), position = position_dodge(width = 1), size = label.size) +
+    geom_col() +
+    geom_segment(aes(x=0, y=pathway, xend=ifelse(NES > 0, -0.025, 0.025), yend=pathway), size=0.5, color="black") + 
+    theme_classic() +
+    theme(axis.title.y = element_blank(), axis.text.y = element_blank(),
+          axis.line.y.left = element_blank(), axis.ticks.y = element_blank()) + 
+    xlab("NES") +
+    geom_vline(xintercept = 0) + 
+    scale_fill_gradient(color, low = "green", high="red")
+}
